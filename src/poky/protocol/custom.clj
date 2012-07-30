@@ -5,13 +5,18 @@
         [gloss core io]))
 
 (def K (string :utf-8 :delimiters " "))
-(def V (string :utf-8 :delimiters " "))
+(def V K)
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
 (defcodec PUT ["PUT" K CR])
-(defcodec GET ["GET" V CR])
+(defcodec GET ["GET" K CR])
 (defcodec MGET ["MGET" K CR])
 (defcodec ERRC (string :utf-8))
+
+(defcodec TCMDS (header K 
+                        (fn [h] (println (format "first fn: '%s'" h)) MGET) 
+                        (fn [b] (println "second fn: " b) (first b))))
+
 
 (defcodec CMDS (header K (fn [h] 
                            (condp = h
