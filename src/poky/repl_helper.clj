@@ -6,7 +6,7 @@
           [lamina.core]
           [aleph.tcp]
           [gloss core io])
-    (:import com.mchange.v2.c3p0.ComboPooledDataSource)
+    ;(:import com.mchange.v2.c3p0.ComboPooledDataSource)
     (:import java.nio.ByteBuffer)
     (:import [java.lang.reflect Method]))
 
@@ -19,10 +19,17 @@
 (def m_test_b (java.nio.ByteBuffer/wrap (.getBytes "MGET abc def ghi\r\n")))
 (def ms_test_b (java.nio.ByteBuffer/wrap (.getBytes "MGET abc\r\n")))
 
-(defn handle [ch s] 
+(defn test-decode []
+  (do
+    (println (decode CMDS p_test_b))
+    (println (decode CMDS g_test_b))
+    (println (decode CMDS m_test_b))
+    (println (decode CMDS ms_test_b))))
+
+(defn thandle [ch s] 
   (enqueue ch (format "You said %s which is a %s" s (type s))))
 
 (defn ehandler [ch client-info]
-  (receive-all ch (partial handle ch)))
+  (receive-all ch (partial thandle ch)))
 
 (start-tcp-server ehandler {:port 10001, :frame (string :utf-8 :delimiters ["\r\n"])})

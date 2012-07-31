@@ -1,7 +1,7 @@
 (ns poky.db
   (:use [clojure.java.jdbc :as sql :only [with-connection]]
         [clojure.pprint])
-  (:import com.mchange.v2.c3p0.ComboPooledDataSource)
+  ;(:import com.mchange.v2.c3p0.ComboPooledDataSource)
   (:import [java.lang.reflect Method]))
 
 (defmacro with-conn

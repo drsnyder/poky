@@ -4,44 +4,45 @@
         [aleph.tcp]
         [gloss core io]))
 
-(def K (string :utf-8 :delimiters " "))
-(def V K)
+(def C (string :utf-8 :delimiters " "))
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
-(defcodec PUT ["PUT" K CR])
-(defcodec GET ["GET" K CR])
-(defcodec MGET ["MGET" K CR])
+(defcodec PUT ["PUT" CR])
+(defcodec GET ["GET" CR])
+(defcodec MGET ["MGET" CR])
 (defcodec ERRC (string :utf-8))
 
-(defcodec TCMDS (header K 
-                        (fn [h] (println (format "first fn: '%s'" h)) MGET) 
-                        (fn [b] (println "second fn: " b) (first b))))
 
 
-(defcodec CMDS (header K (fn [h] 
-                           (condp = h
-                             "PUT" PUT
-                             "GET" GET
-                             "MGET" MGET
-                             ERRC)) 
-                       (fn [b] (first b))))
+(defcodec CMDS
+          (header C
+                  (fn [h]
+                    (case h
+                          "PUT" PUT
+                          "GET" GET
+                          "MGET" MGET
+                          ERRC))
+                  first))
+
+(defn handle [ch ci cmd]
+    (println "Processing command: " (first cmd) " from " ci)
+    (condp = (first cmd)
+      "PUT" (do (println "doing enqueue put") (enqueue ch "got put\r\n"))
+      "GET" (enqueue ch "got get\r\n")
+      "MGET" (enqueue ch "got mget\r\n")
+      (enqueue ch "error")))
+
 
 (defn handler
-  "TCP Handler. Decodes the issued command and calls the appropriate
-  function to excetion some action."
   [ch ci]
-  (receive-all ch
-               (fn [b]
+  ;(receive-all ch (partial handle ch ci)))
+  (fn [cmd]
+    (println "Processing command: " (first cmd) " from " ci)
+    (condp = (first cmd)
+      "PUT" (enqueue ch ["got put"])
+      "GET" (enqueue ch "got get\r\n")
+      "MGET" (enqueue ch "got mget\r\n")
+      (enqueue ch "error"))))
 
-                 (let [deced (decode CMDS b)]
-                   (println "Processing command: " deced)
-                   (condp = (first deced)
-                     "PUT" (enqueue ch "got put")
-                     "GET" (enqueue ch "got get")
-                     "MGET" (enqueue ch "got mget")
-                     (enqueue ch "error"))))))
 
-(defn shandler [ch info]
-  (receive-all ch (fn [d] (println d) (enqueue ch d))))
-
-;(start-tcp-server handler {:port 10000})
+;(def s (start-tcp-server handler {:port 10000 :frame CMDS}))
