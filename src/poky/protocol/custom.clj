@@ -10,6 +10,7 @@
 (defcodec PUT ["PUT" CR])
 (defcodec GET ["GET" CR])
 (defcodec MGET ["MGET" CR])
+(defcodec SAVED ["SAVED" CR])
 (defcodec ERRC (string :utf-8))
 
 
@@ -21,13 +22,14 @@
                           "PUT" PUT
                           "GET" GET
                           "MGET" MGET
+                          "SAVED" SAVED
                           ERRC))
                   first))
 
 (defn handle [ch ci cmd]
     (println "Processing command: " (first cmd) " from " ci)
     (condp = (first cmd)
-      "PUT" (do (println "doing enqueue put") (enqueue ch "got put\r\n"))
+      "PUT" (do (println "doing enqueue put") (enqueue ch ["SAVED" "got put"]))
       "GET" (enqueue ch "got get\r\n")
       "MGET" (enqueue ch "got mget\r\n")
       (enqueue ch "error")))
@@ -35,14 +37,7 @@
 
 (defn handler
   [ch ci]
-  ;(receive-all ch (partial handle ch ci)))
-  (fn [cmd]
-    (println "Processing command: " (first cmd) " from " ci)
-    (condp = (first cmd)
-      "PUT" (enqueue ch ["got put"])
-      "GET" (enqueue ch "got get\r\n")
-      "MGET" (enqueue ch "got mget\r\n")
-      (enqueue ch "error"))))
+  (receive-all ch (partial handle ch ci)))
 
 
 ;(def s (start-tcp-server handler {:port 10000 :frame CMDS}))
