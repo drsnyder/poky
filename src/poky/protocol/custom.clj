@@ -7,10 +7,10 @@
 (def C (string :utf-8 :delimiters " "))
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
-(defcodec PUT ["PUT" CR])
+(defcodec SET ["SET" CR])
 (defcodec GET ["GET" CR])
-(defcodec MGET ["MGET" CR])
-(defcodec SAVED ["SAVED" CR])
+(defcodec GETS ["GETS" CR])
+(defcodec STORED ["STORED" CR])
 (defcodec ERRC (string :utf-8))
 
 
@@ -19,19 +19,19 @@
           (header C
                   (fn [h]
                     (case h
-                          "PUT" PUT
+                          "SET" SET
                           "GET" GET
-                          "MGET" MGET
-                          "SAVED" SAVED
+                          "GETS" GETS
+                          "STORED" STORED
                           ERRC))
                   first))
 
 (defn handle [ch ci cmd]
     (println "Processing command: " (first cmd) " from " ci)
     (condp = (first cmd)
-      "PUT" (do (println "doing enqueue put") (enqueue ch ["SAVED" "got put"]))
+      "SET" (do (println "doing enqueue put") (enqueue ch ["STORED"]))
       "GET" (enqueue ch "got get\r\n")
-      "MGET" (enqueue ch "got mget\r\n")
+      "GETS" (enqueue ch "got mget\r\n")
       (enqueue ch "error")))
 
 

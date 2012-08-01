@@ -16,15 +16,15 @@
 
 (def p_test_b (java.nio.ByteBuffer/wrap (.getBytes "PUT abc 123\r\n")))
 (def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\r\n")))
-(def m_test_b (java.nio.ByteBuffer/wrap (.getBytes "MGET abc def ghi\r\n")))
-(def ms_test_b (java.nio.ByteBuffer/wrap (.getBytes "MGET abc\r\n")))
+(def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\r\n")))
+(def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\r\n")))
 
 (defn test-decode []
   (do
     (println (decode CMDS p_test_b))
     (println (decode CMDS g_test_b))
-    (println (decode CMDS m_test_b))
-    (println (decode CMDS ms_test_b))))
+    (println (decode CMDS gs_test_b))
+    (println (decode CMDS gss_test_b))))
 
 (defn thandle [ch s] 
   (enqueue ch (format "You said %s which is a %s" s (type s))))
@@ -32,4 +32,4 @@
 (defn ehandler [ch client-info]
   (receive-all ch (partial thandle ch)))
 
-(start-tcp-server ehandler {:port 10002, :frame (string :utf-8 :delimiters ["\r\n"])})
+;(start-tcp-server ehandler {:port 10002, :frame (string :utf-8 :delimiters ["\r\n"])})

@@ -8,7 +8,10 @@
                  [aleph "0.3.0-alpha2"]
                  ;[aleph "0.2.1-rc5"]
                  ]
-  :dev-dependencies [[midje "1.4.0"]]
+  :dev-dependencies [[midje "1.4.0"] 
+                     [lein-midje "1.0.10"]
+                     [com.stuartsierra/lazytest "1.2.3"]]
+  :repositories {"stuart" "http://stuartsierra.com/maven2"}
   :repl-init poky.repl-helper
   :test-selectors {:default (complement :integration)
                    :integration :integration
