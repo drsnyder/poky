@@ -32,4 +32,4 @@
 (defn ehandler [ch client-info]
   (receive-all ch (partial thandle ch)))
 
-(start-tcp-server ehandler {:port 10001, :frame (string :utf-8 :delimiters ["\r\n"])})
+(start-tcp-server ehandler {:port 10002, :frame (string :utf-8 :delimiters ["\r\n"])})
