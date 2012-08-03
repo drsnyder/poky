@@ -4,6 +4,7 @@
   (:require [poky.db :as db]))
 
 
+; is there a multi-key/value pair version of update or insert?
 (defn add [conn k v]
   (sql/with-connection conn 
                 (sql/update-or-insert-values poky.vars/*table* ["key = ?" k]  {:key k :value v})))
