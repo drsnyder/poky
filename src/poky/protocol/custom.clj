@@ -4,7 +4,9 @@
         [aleph.tcp]
         [gloss core io]))
 
+(def TRM-DATA-BLOCK (string :utf-8 :delimiters "\r\n"))
 (def C (string :utf-8 :delimiters " "))
+(def K (string :utf-8 :delimiters " "))
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
 (defcodec SET ["SET" CR])
@@ -13,6 +15,9 @@
 
 (defcodec GET ["GET" CR])
 (defcodec GETS ["GETS" CR])
+(defcodec END ["END" CR])
+(defcodec VALUE ["VALUE" CR TRM-DATA-BLOCK])
+(defcodec GET-REPLY ["STORED" CR (repeated VALUE) END])
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
 ;<data block>\r\n
 ;...
@@ -20,16 +25,17 @@
 
 (defcodec ERRC (string :utf-8))
 
+;(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\nVALUE abc\r\n123\r\nEND\r\n")))
 
 (defcodec CMDS
           (header C
                   (fn [h]
                     (case h
-                          "SET" SET
-                          "GET" GET
-                          "GETS" GETS
-                          "STORED" STORED
-                          ERRC))
+                      "SET" SET
+                      "GET" GET
+                      "GETS" GETS
+                      "STORED" (do (println "stored") GET-REPLY)
+                      (do (println "err") ERRC)))
                   first))
 
 (defn cmd-args [decoded]

@@ -18,6 +18,7 @@
 (def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\r\n")))
 (def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\r\n")))
 (def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\r\n")))
+(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\nVALUE abc\r\n123\r\nEND\r\n")))
 
 (defn test-decode []
   (do
