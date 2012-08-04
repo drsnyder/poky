@@ -4,7 +4,7 @@
         [aleph.tcp]
         [gloss core io]))
 
-(def TRM-DATA-BLOCK (string :utf-8 :delimiters "\r\n"))
+(def TRM-DATA-BLOCK (string :utf-8 :suffix "\r\n"))
 (def C (string :utf-8 :delimiters " "))
 (def K (string :utf-8 :delimiters " "))
 (def CR (string :utf-8 :delimiters ["\r\n"]))
@@ -16,8 +16,11 @@
 (defcodec GET ["GET" CR])
 (defcodec GETS ["GETS" CR])
 (defcodec END ["END" CR])
-(defcodec VALUE ["VALUE" CR TRM-DATA-BLOCK])
-(defcodec GET-REPLY ["STORED" CR (repeated VALUE) END])
+(defcodec VALUE [C CR CR])
+
+; to test (decode GET-REPLY gets_test_b)
+(defcodec GET-REPLY (repeated VALUE :prefix :none :delimiters ["END\r\n"]))
+
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
 ;<data block>\r\n
 ;...
@@ -25,7 +28,12 @@
 
 (defcodec ERRC (string :utf-8))
 
-;(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\nVALUE abc\r\n123\r\nEND\r\n")))
+;(def sb (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\nVALUE abc\r\n123\r\n")))
+;(defcodec X ["STORED" CR C CR CR "END" CR])
+;(def get_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\nEND\r\n")))
+;(def gets_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\nVALUE cde\r\n456\r\nEND\r\n")))
+;(def value_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
+;(def values_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\nVALUE cde\r\n456\r\n")))
 
 (defcodec CMDS
           (header C
