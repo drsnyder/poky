@@ -11,14 +11,14 @@
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
 (defcodec SET ["SET" CR])
-(defcodec STORED ["STORED\r\n"])
+(defcodec STORED ["STORED" CR])
 ;STORED\r\n
 
 (defcodec GET ["GET" CR])
 (defcodec GETS ["GETS" CR])
 
 (defcodec VALUE ["VALUE" CR CR])
-(defcodec END ["END"])
+(defcodec END ["END" CR])
 
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
 ;<data block>\r\n
@@ -27,13 +27,14 @@
 
 (defcodec ERRC (string :utf-8))
 
+;(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\n")))
 ;(def get_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 ;(def value_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 
 (defcodec CMDS
           (header C
                   (fn [h]
-                    (println "processing " h)
+                    (println "processing '" h "'")
                     (case h
                       "SET" SET
                       "GET" GET
@@ -74,8 +75,8 @@
     (println "Processing command: " (first cmd) " from " ci)
     (condp = (first cmd)
       "SET" (enqueue ch ["STORED"]) 
-      "GET" (do (enqueue ch ["VALUE" "abc" "123"]) (enqueue ch ["END"]))
-      "GETS" (do (enqueue ch ["VALUE" "abc" "123"]) (enqueue ch ["END"]))
+      "GET" (do (enqueue ch ["VALUE" "abc" "123"]) (enqueue ch ["END" ""]))
+      "GETS" (do (enqueue ch ["VALUE" "abc" "123"]) (enqueue ch ["END" ""]))
       (enqueue ch "error")))
 
 

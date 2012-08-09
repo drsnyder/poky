@@ -2,7 +2,7 @@
     (:use [clojure.java.jdbc :as sql :only [with-connection]]
           [clojure.pprint]
           [poky db core]
-          [poky.protocol.custom]
+          [poky.protocol custom http]
           [lamina.core]
           [aleph.tcp]
           [gloss core io])
@@ -34,3 +34,11 @@
   (receive-all ch (partial thandle ch)))
 
 ;(start-tcp-server ehandler {:port 10002, :frame (string :utf-8 :delimiters ["\r\n"])})
+
+(def f 
+  (compile-frame
+    (header (string :utf-8 :delimiters " ")
+            {:command (string :utf-8 :delimiters ["\r\n"])}
+            first)
+    (fn [b] (println "pre-encode " b))
+    (fn [b] (println "post-decode " b))))
