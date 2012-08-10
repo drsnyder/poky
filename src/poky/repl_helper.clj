@@ -14,7 +14,7 @@
 ; export DATABASE_URL=postgresql://drsnyder@localhost:5432/somedb 
 (def conn (get (System/getenv) "DATABASE_URL")) 
 
-(def p_test_b (java.nio.ByteBuffer/wrap (.getBytes "PUT abc 123\r\n")))
+(def s_test_b (java.nio.ByteBuffer/wrap (.getBytes "SET abc 123\r\n")))
 (def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\r\n")))
 (def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\r\n")))
 (def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\r\n")))
@@ -45,7 +45,9 @@
 
 (defn frame-to-string [f]
   (apply str (concat 
-               (map buffer-to-string f))))
+               (postwalk #(if (instance? java.nio.ByteBuffer %) 
+                       (buffer-to-string %)
+                       %) f))))
 
 (defn buffer-to-string [b]
   (let [cap (.capacity b)]

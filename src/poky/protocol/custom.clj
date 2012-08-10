@@ -20,7 +20,7 @@
 (defcodec GET ["GET" CR])
 (defcodec GETS ["GETS" CR])
 
-(defcodec VALUE ["VALUE" CR CR])
+(defcodec VALUE ["VALUE"  CR CR])
 (defcodec END ["END"])
 
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
@@ -34,23 +34,67 @@
 ;(def get_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 ;(def value_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 
+; NOTES
+; - fails (decode commands s_test_b) 
+; - works (frame-to-string (encode commands ["SET" "abc" "123"]))
+; - works (frame-to-string (encode commands ["VALUE" "abc" "123"]))  
+; - fails (decode commands (encode commands ["VALUE" "abc" "123"]))
+; - kinda (decode commands (encode commands ["SET" "abc" "123"])) ; gives one string
+; 
+; (frame-to-string (list (first (encode commands ["SET" "abc" "123"])))) h->b => 'SET '
+;
+
+(defn h->b [hd] 
+  "Called when decoding. Determines how to construct the body."
+  (println (format "h->b '%s'" (clojure.string/trim hd)))
+  (case (clojure.string/trim hd)
+    "VALUE" VALUE
+    "STORED" STORED
+    "END" END
+    "" (compile-frame [(string :utf-8 :delimiters ["\r\n"])])))
+
+(defn b->h 
+  "Called when encoding. Determines the header that is generated."
+  [body]
+  (println (format "b->h '%s'" body))
+  (case (first body)
+    "VALUE" "VALUE "
+    "END" ""          ; in this case, we do not want a body. its the header plus the delimiter
+    "STORED" ""))
+
+(defn memcache-pre-encode [req]
+  (println (format "memcache-pre-encode '%s'" req))
+  req)
+
+(defn memcache-post-decode [res]
+  (println (format "memcache-post-decode '%s'" res))
+  res)
+
+(defcodec memcache (compile-frame 
+                     (header (string :utf-8 )
+                             h->b
+                             b->h)
+                     memcache-pre-encode
+                     memcache-post-decode))
 
 (defcodec commands
-          (header (string :utf-8 :delimiters ["" " "])
+          (header (string :utf-8 :delimiters " ")
                   (fn [hd]
-                    (println "h->b " hd)
+                    (println (format "h->b '%s'" hd))
                     (case hd
-                      "" (compile-frame (string :utf-8 :delimiters ["\r\n"]))
+                      "" (compile-frame (string :utf-8 :delimiters ["\r\n"])
+                                        (fn [c] (println (format "pre-ecnode '%s'" c)) c)
+                                        (fn [c] (println (format "post-decode '%s'" c)) c))
                       "SET " SET
-                      "VALUE " VALUE))
+                      "VALUE" VALUE))
                   (fn [body] 
                     (let [bkey (if (vector? body) (first body) body)]
-                      (println "b->h " body " " bkey " " (type body))
+                      (println (format "b->h '%s' '%s' %s" body bkey (type body)))
                       (case bkey
                         "END" ""
                         "STORED" ""
                         "SET" "SET "
-                        "VALUE" "VALUE ")))))
+                        "VALUE" "VALUE")))))
 
 ;(frame-to-string (encode commands "END"))
 ;(frame-to-string (encode commands ["SET" "abc" "123"]))
