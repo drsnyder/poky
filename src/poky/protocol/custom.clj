@@ -5,20 +5,23 @@
         [gloss core io]))
 
 (def TRM-DATA-BLOCK (string :utf-8 :suffix "\r\n"))
-(def C (string :utf-8 :delimiters " "))
+(def C (string :utf-8 :delimiters [" "]))
+(def NDLM (string :utf-8))
 (def K (string :utf-8 :delimiters " "))
 (def V (string :utf-8 :delimiters " "))
 (def CR (string :utf-8 :delimiters ["\r\n"]))
 
-(defcodec SET ["SET" CR])
-(defcodec STORED ["STORED" CR])
+(def COMMAND (string :utf-8 :delimiters ["\r\n" " "]))
+
+(defcodec SET ["SET" C CR])
+(defcodec STORED ["STORED"])
 ;STORED\r\n
 
 (defcodec GET ["GET" CR])
 (defcodec GETS ["GETS" CR])
 
 (defcodec VALUE ["VALUE" CR CR])
-(defcodec END ["END" CR])
+(defcodec END ["END"])
 
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
 ;<data block>\r\n
@@ -31,19 +34,43 @@
 ;(def get_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 ;(def value_test_b (java.nio.ByteBuffer/wrap (.getBytes "VALUE abc\r\n123\r\n")))
 
+
+(defcodec commands
+          (header (string :utf-8 :delimiters ["" " "])
+                  (fn [hd]
+                    (println "h->b " hd)
+                    (case hd
+                      "" (compile-frame (string :utf-8 :delimiters ["\r\n"]))
+                      "SET " SET
+                      "VALUE " VALUE))
+                  (fn [body] 
+                    (let [bkey (if (vector? body) (first body) body)]
+                      (println "b->h " body " " bkey " " (type body))
+                      (case bkey
+                        "END" ""
+                        "STORED" ""
+                        "SET" "SET "
+                        "VALUE" "VALUE ")))))
+
+;(frame-to-string (encode commands "END"))
+;(frame-to-string (encode commands ["SET" "abc" "123"]))
+;(frame-to-string (encode commands ["VALUE" "abc" "123"]))
+
 (defcodec CMDS
-          (header C
+          (header CR 
                   (fn [h]
                     (println "processing '" h "'")
                     (case h
                       "SET" SET
                       "GET" GET
                       "GETS" GETS
-                      "STORED" (do (println "do stored") STORED)
+                      "STORED" STORED
                       "VALUE" (do (println "do value") VALUE)
                       "END" END
-                      (do (println "err") ERRC)))
-                  first))
+                      ERRC))
+                  (fn [h] 
+                    (println "processing header" h " " (type h)) 
+                      (first h))))
 
 (defn cmd-args [decoded]
   (second decoded))

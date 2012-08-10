@@ -1,6 +1,6 @@
 (ns poky.repl-helper
     (:use [clojure.java.jdbc :as sql :only [with-connection]]
-          [clojure.pprint]
+          [clojure pprint walk]
           [poky db core]
           [poky.protocol custom http]
           [lamina.core]
@@ -42,3 +42,17 @@
             first)
     (fn [b] (println "pre-encode " b))
     (fn [b] (println "post-decode " b))))
+
+(defn frame-to-string [f]
+  (apply str (concat 
+               (map buffer-to-string f))))
+
+(defn buffer-to-string [b]
+  (let [cap (.capacity b)]
+    (if (> cap 0)
+      (loop [len (.capacity b)
+             result ()]
+        (if (= 0 len)
+          (apply str (map #(str (char %)) result))
+          (recur (dec len) (conj result (.get b (dec len))))))
+      nil)))
