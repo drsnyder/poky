@@ -2,7 +2,7 @@
     (:use [clojure.java.jdbc :as sql :only [with-connection]]
           [clojure pprint walk]
           [poky db core]
-          [poky.protocol custom http]
+          [poky.protocol memcache http]
           [lamina.core]
           [aleph.tcp]
           [gloss core io])
@@ -14,18 +14,18 @@
 ; export DATABASE_URL=postgresql://drsnyder@localhost:5432/somedb 
 (def conn (get (System/getenv) "DATABASE_URL")) 
 
-(def s_test_b (java.nio.ByteBuffer/wrap (.getBytes "SET abc 123\r\n")))
-(def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\r\n")))
-(def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\r\n")))
-(def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\r\n")))
-(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\r\nVALUE abc\r\n123\r\nEND\r\n")))
+;(def s_test_b (java.nio.ByteBuffer/wrap (.getBytes "SET abc 123\\r\\n")))
+;(def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\\r\\n")))
+;(def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\\r\\n")))
+;(def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\\r\\n")))
+;(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\\r\\nVALUE abc\\r\\n123\\r\\nEND\\r\\n")))
 
-(defn test-decode []
-  (do
-    (println (decode CMDS p_test_b))
-    (println (decode CMDS g_test_b))
-    (println (decode CMDS gs_test_b))
-    (println (decode CMDS gss_test_b))))
+;(defn test-decode []
+;  (do
+;    (println (decode CMDS p_test_b))
+;    (println (decode CMDS g_test_b))
+;    (println (decode CMDS gs_test_b))
+;    (println (decode CMDS gss_test_b))))
 
 (defn thandle [ch s] 
   (enqueue ch (format "You said %s which is a %s" s (type s))))
@@ -43,6 +43,7 @@
     (fn [b] (println "pre-encode " b))
     (fn [b] (println "post-decode " b))))
 
+(declare buffer-to-string)
 (defn frame-to-string [f]
   (apply str (concat 
                (postwalk #(if (instance? java.nio.ByteBuffer %) 

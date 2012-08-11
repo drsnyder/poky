@@ -1,6 +1,6 @@
 (ns poky.test.protocol.custom
-  (:use [poky.protocol.custom]
-        [lamina.core]
+  (:use [poky.protocol custom]
+        ;[lamina.core]
         [gloss core io]
         [clojure.test]
         [midje.sweet]))
