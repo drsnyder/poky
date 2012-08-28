@@ -14,19 +14,6 @@
 ; export DATABASE_URL=postgresql://drsnyder@localhost:5432/somedb 
 (def conn (get (System/getenv) "DATABASE_URL")) 
 
-;(def s_test_b (java.nio.ByteBuffer/wrap (.getBytes "SET abc 123\\r\\n")))
-;(def g_test_b (java.nio.ByteBuffer/wrap (.getBytes "GET abc\\r\\n")))
-;(def gs_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc def ghi\\r\\n")))
-;(def gss_test_b (java.nio.ByteBuffer/wrap (.getBytes "GETS abc\\r\\n")))
-;(def store_test_b (java.nio.ByteBuffer/wrap (.getBytes "STORED\\r\\nVALUE abc\\r\\n123\\r\\nEND\\r\\n")))
-
-;(defn test-decode []
-;  (do
-;    (println (decode CMDS p_test_b))
-;    (println (decode CMDS g_test_b))
-;    (println (decode CMDS gs_test_b))
-;    (println (decode CMDS gss_test_b))))
-
 (defn thandle [ch s] 
   (enqueue ch (format "You said %s which is a %s" s (type s))))
 
