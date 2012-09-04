@@ -4,12 +4,12 @@
   (:import com.mchange.v2.c3p0.ComboPooledDataSource)
   (:import [java.lang.reflect Method]))
 
-;(def db-spec 
-;  {:classname "com.postgresql.jdbc.Driver"
-;   :subprotocol "postgresql"
-;   :subname "//127.0.0.1:3306/poky"
-;   :user "myaccount"
-;   :password "secret"})
+; set the interesting stuff here with ENV variables
+(def db-spec 
+  {:classname "com.postgresql.jdbc.Driver"
+   :subprotocol "postgresql"
+   :subname "//127.0.0.1:3306/poky"
+   })
 
 (defn pool
   [spec]

@@ -4,23 +4,39 @@
         [aleph.tcp]
         [gloss core io]))
 
+
+; :value->delimiter
+(defn memcache-value->delimiter [v]
+  (println (format "memcache-value->delimiter: encoding '%s'" v))
+  (case v
+        "END" ["\r\n"]
+        "STORED" ["\r\n"]
+        " "))
+
+
 (def C (string :utf-8 :delimiters [" "]))
 (def K (string :utf-8 :delimiters [" "]))
 (def V (string :utf-8 :delimiters [" "]))
-(def CMD (string :utf-8 :delimiters " "))
-(def CR (string :utf-8 :delimiters ["\r\n" " "]))
+(def CMD (string :utf-8 :delimiters [" " "\r\n"] :value->delimiter memcache-value->delimiter ))
+(def CR (string :utf-8 :delimiters ["\r\n"]))
 
-;set <key> <flags> <exptime> <bytes> [noreply]\r\n
-;<data block>\r\n
-(defcodec SET ["set" C C CR CR])
+;set <key> <flags> <exptime> <bytes> [noreply]\r\n<data block>\r\n
+;set <key> <flags> <exptime> <bytes>\r\n<data block>\r\n
+(defcodec SET ["set" C C C CR CR])
 
 ;STORED\r\n
 (defcodec STORED ["STORED"])
 
 ;get <key>*\r\n
 ;gets <key>*\r\n
-(defcodec GET ["get" (repeated K :delimiters ["\r\n"]) CR])
-(defcodec GETS ["gets" (repeated K :delimiters [" "]) CR])
+
+; this doesn't work as expected (for this protocol), because the last repeated element will also be
+; delimited. 
+(defcodec KEYS (repeated (string :utf-8 :delimiters [" "]) 
+                         :delimiters ["\r\n" " "]))
+
+(defcodec GET ["get" CR])
+(defcodec GETS ["gets" CR])
 
 (defcodec VALUE ["VALUE" K V V CR CR])
 ;VALUE <key> <flags> <bytes> [<cas unique>]\r\n
@@ -30,18 +46,11 @@
 (defcodec END ["END"])
 ;END\r\n
 
-(defcodec ERRC (string :utf-8))
+(defcodec ERRC CR)
 
-(defn header->b [hd]
-  (let [elems (clojure.string/split hd #" ")
-        cmd (first elems)]
-    (println (format "header->b '%s' '%s'" hd cmd))
-    (case cmd
-      "END" (compile-frame (string :utf-8 :delimiters ["\r\n"]))
-      "STORED" (compile-frame (string :utf-8 :delimiters ["\r\n"]))
-      (compile-frame (string :utf-8 :delimiters [" "])))))
 
 (defn body->h [body] 
+  (println (format "body->h: '%s' '%s'" body (first body)))
   (first body))
 
 
@@ -52,13 +61,11 @@
     (case hd
       "gets" GETS
       "get"  GET
+      "set" SET
       "VALUE" VALUE
-      "VALU" (compile-frame ["VALUE" (string :utf-8 :delimiters ["E "]) K V V CR CR])
       "STORED" STORED
-      "STOR" (compile-frame ["STORED" (string :utf-8 :delimiters ["ED\n"])])
       "END" END
-      "END\r" (compile-frame ["END" (string :utf-8 :delimiters ["\n"])])
-      "" (compile-frame [(string :utf-8 :delimiters ["\r\n"])])))
+          ERRC))
 
 
 
@@ -70,7 +77,6 @@
 
 (defn memcache-pre-encode [req]
   (println (format "memcache-pre-encode '%s'" req))
-  ; consider using finite-frame for STORED/END and add a pre/post method
   req)
 
 (defn memcache-post-decode [res]
@@ -78,33 +84,9 @@
   res)
 
 (defcodec MEMCACHE (compile-frame 
-                     (header (string :utf-8 :delimiters ["\r\n" " "])
-                             h->b
-                             b->h)
+                     (header CMD h->b b->h)
                      memcache-pre-encode
                      memcache-post-decode))
-
-(def cmd-codecs )
-
-
-(def format-command 
-  (enum 
-    :byte 
-    {:end \E
-     :value \V
-     :stored \S
-     :get \g}))
-
-(def codec-map {
-                :end (compile-frame ["ND" CR])
-                })
-
-(defcodec TM (compile-frame
-               (header format-command
-                       codec-map
-                       first)))
-
-
 
 
 (defn cmd-args-len [decoded]
@@ -126,7 +108,7 @@
   (nth decoded 5))
 
 (defn cmd-gets-keys [decoded]
-  (rest decoded))
+  (clojure.string/split (first (rest decoded)) #" "))
 
 (defn debug-response [ch msg r]
   (do 
