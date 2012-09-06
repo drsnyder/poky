@@ -1,7 +1,5 @@
 (ns poky.protocol.memcache
   (:use [poky.core :as poky]
-        [lamina.core]
-        [aleph.tcp]
         [gloss core io]))
 
 
@@ -11,103 +9,59 @@
   (case v
         "END" ["\r\n"]
         "STORED" ["\r\n"]
+        "ERROR" ["\r\n"]
+        "CLIENT_ERROR" ["\r\n"]
+        "SERVER_ERROR" ["\r\n"]
         " "))
 
 
-(def C (string :utf-8 :delimiters [" "]))
-(def K (string :utf-8 :delimiters [" "]))
-(def V (string :utf-8 :delimiters [" "]))
-(def CMD (string :utf-8 :delimiters [" " "\r\n"] :value->delimiter memcache-value->delimiter ))
-(def CR (string :utf-8 :delimiters ["\r\n"]))
+(def CMD (string :utf-8 :delimiters [" " "\r\n"] 
+                 :value->delimiter memcache-value->delimiter ))
 
-;set <key> <flags> <exptime> <bytes> [noreply]\r\n<data block>\r\n
-;set <key> <flags> <exptime> <bytes>\r\n<data block>\r\n
-(defcodec SET ["set" C C C CR CR])
+(defn codec-map 
+  ([] (codec-map :utf-8))
+  ([charset] 
+   (let [S   (string charset :delimiters [" "])
+         CR  (string charset :delimiters ["\r\n"])]
+     {:set           (compile-frame ["set" S S S CR CR])
+      :add           (compile-frame ["add" S S S CR CR])
+      :replace       (compile-frame ["replace" S S S CR CR])
+      :stored        (compile-frame ["STORED"])
+      :get           (compile-frame ["get" CR])
+      :gets          (compile-frame ["gets" CR])
+      :value         (compile-frame ["VALUE" S S CR CR])
+      :end           (compile-frame ["END"])
+      :client_error  (compile-frame ["CLIENT_ERROR"])
+      :server_error  (compile-frame ["SERVER_ERROR"])
+      :error         (compile-frame ["ERROR"])})))
 
-;STORED\r\n
-(defcodec STORED ["STORED"])
+(defn cmd-to-keyword [cmd]
+  (keyword (clojure.string/lower-case cmd)))
 
-;get <key>*\r\n
-;gets <key>*\r\n
-(defcodec GET ["get" CR])
-(defcodec GETS ["gets" CR])
-
-;VALUE <key> <flags> <bytes> [<cas unique>]\r\n<data block>\r\n
-;VALUE <key> <flags> <bytes>\r\n<data block>\r\n
-(defcodec VALUE ["VALUE" K V CR CR])
-
-;END\r\n
-(defcodec END ["END"])
-
-(defcodec ERRC CR)
-
-
-(defn body->h [body] 
-  (println (format "body->h: '%s' '%s'" body (first body)))
-  (first body))
-
-(defn h->b [hd] 
+(defn h->b [codec hd] 
   "Called when decoding. Determines how to construct the body."
-  (println (format "header h->b: '%s'" hd))
-    (case hd
-      "gets"   GETS
-      "get"    GET
-      "set"    SET
-      "VALUE"  VALUE
-      "STORED" STORED
-      "END"    END
-          ERRC))
+  (let [k (cmd-to-keyword hd)]
+    (println (format "header h->b: '%s'" k))
+    (get codec k (get codec :error))))
 
 (defn b->h 
   "Called when encoding. Determines the header that is generated."
   [body]
   (println (format "b->h '%s'" body))
-  (first body))
+  (cmd-to-keyword (first body)))
 
 (defn memcache-pre-encode [req] req)
 
 (defn memcache-post-decode [res] res)
 
-(defcodec MEMCACHE (compile-frame 
-                     (header CMD h->b b->h)
-                     memcache-pre-encode
-                     memcache-post-decode))
+(defn memcache-codec 
+  ([] (memcache-codec :utf-8))
+  ([charset] 
+   (compile-frame 
+     (header CMD
+             (partial h->b (codec-map charset))  
+             b->h)
+     memcache-pre-encode
+     memcache-post-decode)))
 
 
-(defn cmd-args-len [decoded]
-  (count (rest decoded)))
-
-(defn cmd-args [decoded n]
-  (nth decoded n))
-
-(defn extract-cmd-args [decoded f]
-  (let [args (clojure.string/split (cmd-args decoded) #" ")]
-    (if args
-      (f args)
-      nil)))
-
-(defn cmd-set-key [decoded]
-  (second decoded))
-
-(defn cmd-set-value [decoded]
-  (nth decoded 5))
-
-(defn cmd-gets-keys [decoded]
-  (clojure.string/split (first (rest decoded)) #" "))
-
-
-(defn memcache [ch ci cmd]
-    (println "Processing command: " (first cmd) " from " ci)
-    (condp = (first cmd)
-      "set" (enqueue ch ["STORED"]) 
-      "get" (do (enqueue ch ["VALUE" "abc" "0" "3" "123"]) (enqueue ch ["END"]))
-      "gets" (do (enqueue ch ["VALUE" "abc" "0" "3" "123"]) (enqueue ch ["END"]))
-      (enqueue ch "error")))
-
-
-(defn handler
-  [ch ci]
-  (receive-all ch (partial memcache ch ci)))
-
-(defn start-server [port]
-  (start-tcp-server handler {:port port :frame MEMCACHE}))

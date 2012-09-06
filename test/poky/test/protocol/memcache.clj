@@ -11,36 +11,18 @@
 (def end-tests [(java.nio.ByteBuffer/wrap (.getBytes "END\r\n"))])
 (def stored-tests [(java.nio.ByteBuffer/wrap (.getBytes "STORED\r\n"))])
 
+(def MEMCACHE (memcache-codec :utf-8))
 
-(fact 
-  (cmd-set-key ["SET" "abc" "123"]) => "abc")
-
-(fact 
-  (cmd-set-value ["SET" "abc" "0" "0" "3" "123"]) => "123")
-
-(fact 
-  (first (cmd-gets-keys ["GET" "abc"])) => "abc")
 
 (fact 
   (first (decode MEMCACHE (first set-tests))) => "set")
 
-(fact 
-  (cmd-set-key (decode MEMCACHE (first set-tests))) => "abc")
-
-(fact 
-  (cmd-set-value (decode MEMCACHE (first set-tests))) => "123")
 
 (fact 
   (first (decode MEMCACHE (first get-tests))) => "get")
 
 (fact 
   (first (decode MEMCACHE (first gets-tests))) => "gets")
-
-(fact
-  (first (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "abc")
-
-(fact
-  (second (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "def")
 
 (fact 
   (second (decode MEMCACHE (first value-tests))) => "abc")
@@ -50,3 +32,25 @@
 
 (fact 
   (first (decode MEMCACHE (first stored-tests))) => "STORED")
+
+
+;(fact 
+;  (cmd-set-key ["SET" "abc" "123"]) => "abc")
+;
+;(fact 
+;  (cmd-set-value ["SET" "abc" "0" "0" "3" "123"]) => "123")
+;
+;(fact 
+;  (first (cmd-gets-keys ["GET" "abc"])) => "abc")
+;
+;(fact 
+;  (cmd-set-key (decode MEMCACHE (first set-tests))) => "abc")
+;
+;(fact 
+;  (cmd-set-value (decode MEMCACHE (first set-tests))) => "123")
+;
+;(fact
+;  (first (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "abc")
+;
+;(fact
+;  (second (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "def")
