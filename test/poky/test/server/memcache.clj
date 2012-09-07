@@ -40,6 +40,10 @@
   (second (cmd-gets-keys server-get-test)) => "def")
 
 
+; these are working as push-through unit tests via the protocol definition above.
+; in practice the return value won't look like this as IEnqueue.enqueue should 
+; return true if the message was enqueued to the channel
+
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
                  (fn [p] {:update true})) => ["STORED"])
