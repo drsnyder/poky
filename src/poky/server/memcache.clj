@@ -1,8 +1,9 @@
 (ns poky.server.memcache
-  (:use [poky util core]
+  (:use [poky util]
         [lamina.core]
         [aleph.tcp])
-  (:require [poky.protocol.memcache :as pm]))
+  (:require [poky.protocol.memcache :as pm]
+            [poky.core :as poky]))
 
 (defn cmd-args-len [decoded]
   (count (rest decoded)))
@@ -27,19 +28,17 @@
 
 
 
-
-
 (defmulti cmd->dispatch
-  (fn [cmd channel client-info payload process-fn] cmd))
+  (fn [cmd channel client-info payload process-fn] (cmd-to-keyword cmd)))
 
-(defmethod cmd->dispatch "set" 
+(defmethod cmd->dispatch :set
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn payload)]
     (if (:error response)
       (enqueue channel ["SERVER_ERROR" (:error response)])
       (enqueue channel ["STORED"]))))
 
-(defmethod cmd->dispatch "get" 
+(defmethod cmd->dispatch :get
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn payload)]
     (if (:error response)
@@ -52,28 +51,33 @@
                        ["VALUE" (:key t) "0" "0" (str (count (:value t))) (:value t)]) 
                      (:values response)) ["END"]))))))
 
+(defmethod cmd->dispatch :gets
+  [cmd channel client-info payload process-fn] 
+  (cmd->dispatch :get channel client-info payload process-fn))
+
+(defn db->set
+  [req]
+  (poky/add 
+    (cmd-set-key req)
+    (cmd-set-value req)))
+
+(defn db->gets
+  [req]
+  (poky/gets (cmd-gets-keys req)))
+
+(def handler-map
+  {:set db->set
+   :get db->gets
+   :gets db->gets})
 
 (defn memcache-handler [ch ci handler-map cmd]
   (let [cmd-key (cmd-to-keyword (first cmd))]
     (cmd->dispatch cmd-key ch ci (rest cmd) 
                    (get handler-map cmd-key (get handler-map :error)))))
 
-  ;(condp = (first cmd)
-  ;  "set" (enqueue ch ["STORED"]) 
-  ;  "get" (do (enqueue ch ["VALUE" "abc" "0" "3" "123"]) (enqueue ch ["END"]))
-  ;  "gets" (do (enqueue ch ["VALUE" "abc" "0" "3" "123"]) (enqueue ch ["END"]))
-  ;  (enqueue ch "error")))
-
-;(defmulti dispatch (fn [cmd payload] cmd))
-;(defmethod dispatch "set" 
-;  [cmd payload] 
-;  (format "recieved set x => %s %s" (first payload) (second payload)))
-;
-;(dispatch "set" ["abc" "123"])
-
 (defn handler
   [ch ci]
-  (receive-all ch (partial memcache-handler ch ci)))
+  (receive-all ch (partial memcache-handler ch ci handler-map)))
 
 (defn start-server [port]
   (start-tcp-server handler {:port port :frame (pm/memcache-codec :utf-8)}))

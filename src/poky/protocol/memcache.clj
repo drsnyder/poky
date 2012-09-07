@@ -2,31 +2,34 @@
   (:use [poky util]
         [gloss core io]))
 
+(def CRLF "\r\n")
 
 ; :value->delimiter
 (defn memcache-value->delimiter [v]
   (println (format "memcache-value->delimiter: encoding '%s'" v))
   (case v
-        "END" ["\r\n"]
-        "STORED" ["\r\n"]
-        "ERROR" ["\r\n"]
-        "CLIENT_ERROR" ["\r\n"]
-        "SERVER_ERROR" ["\r\n"]
+        "END" [CRLF]
+        "STORED" [CRLF]
+        "DELETED" [CRLF]
+        "ERROR" [CRLF]
+        "CLIENT_ERROR" [CRLF]
+        "SERVER_ERROR" [CRLF]
         " "))
 
 
-(def CMD (string :utf-8 :delimiters [" " "\r\n"] 
+(def CMD (string :utf-8 :delimiters [" " CRLF] 
                  :value->delimiter memcache-value->delimiter ))
 
 (defn codec-map 
   ([] (codec-map :utf-8))
   ([charset] 
    (let [S   (string charset :delimiters [" "])
-         CR  (string charset :delimiters ["\r\n"])]
+         CR  (string charset :delimiters [CRLF])]
      {:set           (compile-frame ["set" S S S CR CR])
       :add           (compile-frame ["add" S S S CR CR])
       :replace       (compile-frame ["replace" S S S CR CR])
       :stored        (compile-frame ["STORED"])
+      :deleted       (compile-frame ["DELETED"])
       :get           (compile-frame ["get" CR])
       :gets          (compile-frame ["gets" CR])
       :value         (compile-frame ["VALUE" S S CR CR])

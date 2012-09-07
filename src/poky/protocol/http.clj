@@ -3,6 +3,7 @@
         [compojure.core]
         [ring.middleware json-params params])
   (:require [poky.core :as poky]
+            [poky.db   :as db]
             [poky.vars :as pvars]))
 
 (defn- json-response [data & [status]]

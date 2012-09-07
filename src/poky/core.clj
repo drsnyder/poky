@@ -5,11 +5,9 @@
 
 
 ; is there a multi-key/value pair version of update or insert?
-(defn add [conn k v]
+(defn add [k v]
   (try 
-    (let [r (sql/with-connection 
-              conn 
-              (sql/update-or-insert-values poky.vars/*table* ["key = ?" k]  {:key k :value v}))]
+    (let [r (db/insert-or-update k v)]
       (cond
         (map? r) {:insert true}
         (seq? r) {:update true}
@@ -17,13 +15,19 @@
     (catch Exception e {:error (str "Exception: " (.getMessage e))})))
 
 
-(defn gets [conn ks]
+(defn gets [ks]
   (try
     {:values 
-     (db/query conn 
+     (db/query 
               (format "SELECT key, value FROM %s WHERE key IN (%s)" 
                       poky.vars/*table* 
                       (clojure.string/join "," (map #(sql/as-quoted-str "'" %) ks))))}
     (catch Exception e {:error (str "Exception: " (.getMessage e))})))
 
   
+; TODO: what are the semantics of delete in memcache? what is the return value
+; if the object is deleted?
+(defn delete [k]
+  (try
+    {:deleted (first (db/delete k))}
+    (catch Exception e {:error (str "Exception " (.getMessage e))})))

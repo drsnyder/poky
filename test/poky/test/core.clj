@@ -1,6 +1,15 @@
 (ns poky.test.core
-  (:use [poky.core])
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:require [poky.core :as poky]))
 
-;(deftest replace-me ;; FIXME: write
-;  (is false "No tests have been written."))
+
+(deftest ^:integration test-add
+         (let [r (poky/add "abc" "123")]
+           (is (or (:insert r) (:update r)))))
+
+(deftest ^:integration test-gets
+         (let [r (poky/gets ["abc"])]
+           (is (:values r))
+           (is (= (:key (first (:values r))) "abc"))
+           (is (= (:value (first (:values r))) "123"))))
+
