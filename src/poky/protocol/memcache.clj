@@ -1,5 +1,5 @@
 (ns poky.protocol.memcache
-  (:use [poky.core :as poky]
+  (:use [poky util]
         [gloss core io]))
 
 
@@ -31,12 +31,10 @@
       :gets          (compile-frame ["gets" CR])
       :value         (compile-frame ["VALUE" S S CR CR])
       :end           (compile-frame ["END"])
-      :client_error  (compile-frame ["CLIENT_ERROR"])
-      :server_error  (compile-frame ["SERVER_ERROR"])
+      :client_error  (compile-frame ["CLIENT_ERROR" CR])
+      :server_error  (compile-frame ["SERVER_ERROR" CR])
       :error         (compile-frame ["ERROR"])})))
 
-(defn cmd-to-keyword [cmd]
-  (keyword (clojure.string/lower-case cmd)))
 
 (defn h->b [codec hd] 
   "Called when decoding. Determines how to construct the body."

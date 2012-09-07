@@ -19,10 +19,11 @@
 
 (defn gets [conn ks]
   (try
-    (db/query conn 
+    {:values 
+     (db/query conn 
               (format "SELECT key, value FROM %s WHERE key IN (%s)" 
                       poky.vars/*table* 
-                      (clojure.string/join "," (map #(sql/as-quoted-str "'" %) ks))))
+                      (clojure.string/join "," (map #(sql/as-quoted-str "'" %) ks))))}
     (catch Exception e {:error (str "Exception: " (.getMessage e))})))
 
   

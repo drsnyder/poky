@@ -7,6 +7,7 @@
                  [c3p0/c3p0 "0.9.1.2"] 
                  [gloss "0.2.2-SNAPSHOT"]
                  [aleph "0.3.0-SNAPSHOT"]
+                 [slingshot "0.10.3"]
                  [ring/ring-core "[0.2.0,)"]
                  [ring-json-params "0.1.3"]
                  [compojure "1.1.1"]
