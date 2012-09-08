@@ -28,6 +28,7 @@
      {:set           (compile-frame ["set" S S S CR CR])
       :add           (compile-frame ["add" S S S CR CR])
       :replace       (compile-frame ["replace" S S S CR CR])
+      :delete        (compile-frame ["delete" CR])
       :stored        (compile-frame ["STORED"])
       :deleted       (compile-frame ["DELETED"])
       :get           (compile-frame ["get" CR])

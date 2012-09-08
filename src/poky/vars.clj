@@ -8,4 +8,4 @@
 (def ^:dynamic *password* (get (System/getenv) "POKY_PASSWORD" ""))
 
 (def ^:dynamic *subname* 
-  (get (System/getenv) "POKY_SUBNAME" (format "127.0.0.1:3306/%s" *table*)))
+  (get (System/getenv) "POKY_SUBNAME" (format "127.0.0.1:5432/%s" *table*)))

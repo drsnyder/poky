@@ -13,3 +13,6 @@
            (is (= (:key (first (:values r))) "abc"))
            (is (= (:value (first (:values r))) "123"))))
 
+(deftest ^:integration test-delete
+         (let [r (poky/delete "abc")]
+           (is (:deleted r))))

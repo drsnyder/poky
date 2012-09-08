@@ -43,14 +43,17 @@
 
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
-                 (fn [p] {:update true})) => ["STORED"])
+                 (fn [cmd p] {:update true})) => ["STORED"])
 
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
-                 (fn [p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
+                 (fn [cmd p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
 
 (fact 
   (cmd->dispatch "get" [] {} server-get-test 
-                 (fn [p] {:values [{:key "abc" :value "123"} 
+                 (fn [cmd p] {:values [{:key "abc" :value "123"} 
                                    {:key "def" :value "456"}]})) =>
   ["VALUE" "abc" "0" "0" "3" "123" "VALUE" "def" "0" "0" "3" "456" "END"])
+
+
+

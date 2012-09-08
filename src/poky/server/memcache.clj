@@ -26,21 +26,27 @@
 (defn cmd-gets-keys [decoded]
   (clojure.string/split (first (rest decoded)) #" "))
 
-
+(defn cmd-delete-key [decoded]
+  (second decoded))
 
 (defmulti cmd->dispatch
   (fn [cmd channel client-info payload process-fn] (cmd-to-keyword cmd)))
 
+; FIXME: invert the logic on the cmd->dispatch methods. first check for the
+; correct response, then the error, and then handle the default case
+
+; TODO: finish up delete
+
 (defmethod cmd->dispatch :set
   [cmd channel client-info payload process-fn] 
-  (let [response (process-fn payload)]
+  (let [response (process-fn cmd payload)]
     (if (:error response)
       (enqueue channel ["SERVER_ERROR" (:error response)])
       (enqueue channel ["STORED"]))))
 
 (defmethod cmd->dispatch :get
   [cmd channel client-info payload process-fn] 
-  (let [response (process-fn payload)]
+  (let [response (process-fn cmd payload)]
     (if (:error response)
       (enqueue channel ["SERVER_ERROR" (:error response)])
       (enqueue channel 
@@ -55,29 +61,55 @@
   [cmd channel client-info payload process-fn] 
   (cmd->dispatch :get channel client-info payload process-fn))
 
-(defn db->set
-  [req]
+(defmethod cmd->dispatch :delete
+  [cmd channel client-info payload process-fn] 
+  (let [response (process-fn cmd payload)]
+    (if (:error response)
+      (enqueue channel ["SERVER_ERROR" (:error response)])
+      (enqueue channel ["DELETED"]))))
+
+
+; is this a client error or just error?
+(defmethod cmd->dispatch :default
+  [cmd channel client-info payload process-fn] 
+  ["ERROR"])
+
+
+
+(defmulti storage->dispatch
+  (fn [cmd req] (cmd-to-keyword cmd)))
+
+(defmethod storage->dispatch :set
+  [cmd req] 
   (poky/add 
     (cmd-set-key req)
     (cmd-set-value req)))
 
-(defn db->gets
-  [req]
+(defmethod storage->dispatch :get
+  [cmd req]
   (poky/gets (cmd-gets-keys req)))
 
-(def handler-map
-  {:set db->set
-   :get db->gets
-   :gets db->gets})
+(defmethod storage->dispatch :gets
+  [cmd req]
+  (storage->dispatch :get cmd req))
 
-(defn memcache-handler [ch ci handler-map cmd]
-  (let [cmd-key (cmd-to-keyword (first cmd))]
+(defmethod storage->dispatch :delete
+  [cmd req]
+  (poky/delete (cmd-gets-keys req)))
+
+
+(defmethod storage->dispatch :default
+  [cmd req]
+  {:error (format "Unknown storage command %s." cmd)})
+
+(defn memcache-handler [ch ci cmd]
+  (let [cmd-key (first cmd)]
     (cmd->dispatch cmd-key ch ci (rest cmd) 
-                   (get handler-map cmd-key (get handler-map :error)))))
+                   storage->dispatch)))
 
 (defn handler
   [ch ci]
-  (receive-all ch (partial memcache-handler ch ci handler-map)))
+  (receive-all ch (partial memcache-handler ch ci)))
 
 (defn start-server [port]
   (start-tcp-server handler {:port port :frame (pm/memcache-codec :utf-8)}))
