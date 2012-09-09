@@ -32,30 +32,29 @@
 (defmulti cmd->dispatch
   (fn [cmd channel client-info payload process-fn] (cmd-to-keyword cmd)))
 
-; FIXME: invert the logic on the cmd->dispatch methods. first check for the
-; correct response, then the error, and then handle the default case
-
 ; TODO: finish up delete
 
 (defmethod cmd->dispatch :set
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn cmd payload)]
-    (if (:error response)
-      (enqueue channel ["SERVER_ERROR" (:error response)])
-      (enqueue channel ["STORED"]))))
+    (cond
+      (or (:update response) (:insert response)) (enqueue channel ["STORED"])
+      (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
+      :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while setting."]))))
 
 (defmethod cmd->dispatch :get
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn cmd payload)]
-    (if (:error response)
-      (enqueue channel ["SERVER_ERROR" (:error response)])
-      (enqueue channel 
-               (flatten
-                 (concat 
-                   (map 
-                     (fn [t]
-                       ["VALUE" (:key t) "0" "0" (str (count (:value t))) (:value t)]) 
-                     (:values response)) ["END"]))))))
+    (cond 
+      (:values response) (enqueue channel 
+                                  (flatten
+                                    (concat 
+                                      (map 
+                                        (fn [t]
+                                          ["VALUE" (:key t) "0" "0" (str (count (:value t))) (:value t)]) 
+                                        (:values response)) ["END"])))
+      (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
+      :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))
 
 (defmethod cmd->dispatch :gets
   [cmd channel client-info payload process-fn] 
@@ -64,15 +63,16 @@
 (defmethod cmd->dispatch :delete
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn cmd payload)]
-    (if (:error response)
-      (enqueue channel ["SERVER_ERROR" (:error response)])
-      (enqueue channel ["DELETED"]))))
+    (cond 
+      (:deleted response) (enqueue channel ["DELETED"])
+      (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
+      :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while deleting."]))))
 
 
 ; is this a client error or just error?
 (defmethod cmd->dispatch :default
   [cmd channel client-info payload process-fn] 
-  ["ERROR"])
+  (enqueue channel ["ERROR"]))
 
 
 
@@ -97,10 +97,10 @@
   [cmd req]
   (poky/delete (cmd-gets-keys req)))
 
-
 (defmethod storage->dispatch :default
   [cmd req]
   {:error (format "Unknown storage command %s." cmd)})
+
 
 (defn memcache-handler [ch ci cmd]
   (let [cmd-key (first cmd)]

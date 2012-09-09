@@ -1,5 +1,6 @@
 (ns poky.test.core
-  (:use [clojure.test])
+  (:use [clojure.test]
+        [midje.sweet])
   (:require [poky.core :as poky]))
 
 
@@ -8,7 +9,8 @@
            (is (or (:insert r) (:update r)))))
 
 (deftest ^:integration test-gets
-         (let [r (poky/gets ["abc"])]
+         (let [a (poky/add "abc" "123")
+               r (poky/gets ["abc"])]
            (is (:values r))
            (is (= (:key (first (:values r))) "abc"))
            (is (= (:value (first (:values r))) "123"))))
