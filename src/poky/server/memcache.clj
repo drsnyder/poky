@@ -46,13 +46,16 @@
   [cmd channel client-info payload process-fn] 
   (let [response (process-fn cmd payload)]
     (cond 
-      (:values response) (enqueue channel 
-                                  (flatten
-                                    (concat 
-                                      (map 
-                                        (fn [t]
-                                          ["VALUE" (:key t) "0" "0" (str (count (:value t))) (:value t)]) 
-                                        (:values response)) ["END"])))
+      (:values response)
+      (and
+        (enqueue channel 
+                 (vec (flatten
+                        (concat 
+                          (map 
+                            (fn [t]
+                              ["VALUE" (:key t) "0" (str (count (:value t))) (:value t)]) 
+                            (:values response))))))
+        (enqueue channel ["END"]))
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))
 
@@ -91,11 +94,11 @@
 
 (defmethod storage->dispatch :gets
   [cmd req]
-  (storage->dispatch :get cmd req))
+  (storage->dispatch :get req))
 
 (defmethod storage->dispatch :delete
   [cmd req]
-  (poky/delete (cmd-gets-keys req)))
+  (poky/delete (cmd-delete-key req)))
 
 (defmethod storage->dispatch :default
   [cmd req]
@@ -104,12 +107,13 @@
 
 (defn memcache-handler [ch ci cmd]
   (let [cmd-key (first cmd)]
-    (cmd->dispatch cmd-key ch ci (rest cmd) 
+    (cmd->dispatch cmd-key ch ci cmd
                    storage->dispatch)))
 
 (defn handler
   [ch ci]
-  (receive-all ch (partial memcache-handler ch ci)))
+  (receive-all 
+    ch (partial memcache-handler ch ci)))
 
 (defn start-server [port]
   (start-tcp-server handler {:port port :frame (pm/memcache-codec :utf-8)}))

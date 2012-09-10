@@ -9,7 +9,7 @@
 (def gets-tests [(java.nio.ByteBuffer/wrap (.getBytes "gets abc def ghi jkl\r\n"))])
 (def delete-tests [(java.nio.ByteBuffer/wrap (.getBytes "delete abc\r\n"))])
 (def deleted-tests [(java.nio.ByteBuffer/wrap (.getBytes "DELETED\r\n"))])
-(def value-tests [(java.nio.ByteBuffer/wrap (.getBytes "VALUE abc 0 0 3\r\n123\r\n"))])
+(def value-tests [(java.nio.ByteBuffer/wrap (.getBytes "VALUE abc 0 3\r\n123\r\n"))])
 (def end-tests [(java.nio.ByteBuffer/wrap (.getBytes "END\r\n"))])
 (def stored-tests [(java.nio.ByteBuffer/wrap (.getBytes "STORED\r\n"))])
 

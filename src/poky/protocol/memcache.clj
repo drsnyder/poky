@@ -43,14 +43,14 @@
 (defn h->b [codec hd] 
   "Called when decoding. Determines how to construct the body."
   (let [k (cmd-to-keyword hd)]
-    (println (format "header h->b: '%s'" k))
+    (println (format "header h->b: '%s' body: %s" k, hd))
     (get codec k (get codec :error))))
 
 (defn b->h 
   "Called when encoding. Determines the header that is generated."
   [body]
   (println (format "b->h '%s'" body))
-  (cmd-to-keyword (first body)))
+  (first body))
 
 (defn memcache-pre-encode [req] req)
 

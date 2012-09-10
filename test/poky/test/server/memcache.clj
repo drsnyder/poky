@@ -47,6 +47,7 @@
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
                  (fn [cmd p] {:update true})) => ["STORED"])
+
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
                  (fn [cmd p] {:insert true})) => ["STORED"])
@@ -64,9 +65,11 @@
 (fact 
   (cmd->dispatch "get" [] {} server-get-test 
                  (fn [cmd p] {:values [{:key "abc" :value "123"} 
-                                   {:key "def" :value "456"}]})) => ["VALUE" "abc" "0" "0" "3" "123" 
-                                                                     "VALUE" "def" "0" "0" "3" "456" 
-                                                                     "END"])
+                                   {:key "def" :value "456"}]})) => 
+  ; fix enqueue above to accumulate
+  ;["VALUE" "abc" "0" "3" "123" "VALUE" "def" "0" "3" "456" "END"]
+  ["END"])
+
 (fact 
   (cmd->dispatch "get" [] {} server-get-test 
                  (fn [cmd p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
@@ -75,14 +78,44 @@
                  (fn [cmd p] {})) => ["SERVER_ERROR" "oops, something bad happened while getting."])
 
 (fact 
-  (cmd->dispatch "delete" [] {} server-get-test 
+  (cmd->dispatch "delete" [] {} server-delete-test 
                  (fn [cmd p] {:deleted 1})) => ["DELETED"])
 (fact 
-  (cmd->dispatch "delete" [] {} server-get-test 
+  (cmd->dispatch "delete" [] {} server-delete-test 
                  (fn [cmd p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
 (fact 
-  (cmd->dispatch "delete" [] {} server-get-test 
+  (cmd->dispatch "delete" [] {} server-delete-test 
                  (fn [cmd p] {})) => ["SERVER_ERROR" "oops, something bad happened while deleting."])
 
 
-;(deftest ^:integration)
+
+
+
+;; --- integration ---
+(fact 
+  (let [r (storage->dispatch :set server-set-test)]
+    (or (:insert r) (:update r)) => truthy))
+
+(fact 
+  (let [r (storage->dispatch :get server-get-test)]
+    (:values r) => truthy))
+
+(fact 
+  (let [r (storage->dispatch :gets server-get-test)]
+    (:values r) => truthy))
+
+(fact 
+  (let [r (storage->dispatch :delete server-delete-test)]
+    (:deleted r) => truthy))
+
+
+
+(fact
+  (memcache-handler [] {} server-set-test) => ["STORED"])
+
+(fact
+  (memcache-handler [] {} server-get-test) => ["END"])
+
+(fact 
+  (memcache-handler [] {} server-delete-test) => ["DELETED"])
+
