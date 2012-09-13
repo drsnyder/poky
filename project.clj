@@ -15,6 +15,10 @@
                      [lein-ring "0.5.4"]
                      [lein-midje "1.0.10"]
                      [com.stuartsierra/lazytest "1.2.3"]]
+  :license {:name "Eclipse Public License - v 1.0"
+            :url "http://www.eclipse.org/legal/epl-v10.html"
+            :distribution :repo
+            :comments "same as Clojure"}
   :ring {:handler poky.protocol.http/http-app}
   :repositories {"stuart" "http://stuartsierra.com/maven2"}
   :repl-init poky.repl-helper

@@ -1,6 +1,7 @@
 # poky
 names: reddo?
 why?: see also http://dev.mysql.com/tech-resources/articles/nosql-to-mysql-with-memcached.html
+    - related: http://news.ycombinator.com/item?id=4333082
 
 FIXME: write description
 
