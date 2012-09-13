@@ -44,23 +44,3 @@
 (fact 
   (first (decode MEMCACHE (first deleted-tests))) => "DELETED")
 
-;(fact 
-;  (cmd-set-key ["SET" "abc" "123"]) => "abc")
-;
-;(fact 
-;  (cmd-set-value ["SET" "abc" "0" "0" "3" "123"]) => "123")
-;
-;(fact 
-;  (first (cmd-gets-keys ["GET" "abc"])) => "abc")
-;
-;(fact 
-;  (cmd-set-key (decode MEMCACHE (first set-tests))) => "abc")
-;
-;(fact 
-;  (cmd-set-value (decode MEMCACHE (first set-tests))) => "123")
-;
-;(fact
-;  (first (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "abc")
-;
-;(fact
-;  (second (cmd-gets-keys (decode MEMCACHE (first gets-tests)))) => "def")

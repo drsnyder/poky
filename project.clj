@@ -11,7 +11,7 @@
                  [ring-json-params "0.1.3"]
                  [compojure "1.1.1"]
                  [org.clojure/data.json "0.1.2"]]
-  :dev-dependencies [[midje "1.4.0"] 
+  :dev-dependencies [[midje "1.4.0" :exclusions [org.clojure/clojure]] 
                      [lein-ring "0.5.4"]
                      [lein-midje "1.0.10"]
                      [com.stuartsierra/lazytest "1.2.3"]]
@@ -19,7 +19,4 @@
   :repositories {"stuart" "http://stuartsierra.com/maven2"}
   :repl-init poky.repl-helper
   :main poky.main
-  :jvm-opts ["-server"]
-  :test-selectors {:default (complement :integration)
-                   :integration :integration
-                   :all (fn [_] true)})
+  :jvm-opts ["-server"])
