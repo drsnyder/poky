@@ -19,7 +19,7 @@
   (try
     {:values 
      (db/query 
-              (format "SELECT key, value FROM %s WHERE key IN (%s)" 
+              (format "SELECT key, value, octet_length(value) as length FROM %s WHERE key IN (%s)" 
                       poky.vars/*table* 
                       (clojure.string/join "," (map #(sql/as-quoted-str "'" %) ks))))}
     (catch Exception e {:error (str "Exception: " (.getMessage e))})))

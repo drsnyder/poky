@@ -53,7 +53,7 @@
                         (concat 
                           (map 
                             (fn [t]
-                              ["VALUE" (:key t) "0" (str (count (:value t))) (:value t)]) 
+                              ["VALUE" (:key t) "0" (str (:length t)) (:value t)]) 
                             (:values response))))))
         (enqueue channel ["END"]))
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
