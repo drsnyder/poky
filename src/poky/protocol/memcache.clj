@@ -20,12 +20,19 @@
 (def CMD (string :utf-8 :delimiters [" " CRLF] 
                  :value->delimiter memcache-value->delimiter ))
 
+
 (defn codec-map 
   ([] (codec-map :utf-8))
   ([charset] 
    (let [S   (string charset :delimiters [" "])
-         CR  (string charset :delimiters [CRLF])]
-     {:set           (compile-frame ["set" S S S CR CR])
+         CR  (string charset :delimiters [CRLF])
+         VALUE (string charset 
+                       :prefix (prefix 
+                                 (string :ascii :delimiters ["\r\n"]) 
+                                 #(Integer/parseInt %) 
+                                 str) 
+                       :suffix "\r\n")]
+     {:set           (compile-frame ["set" S S S VALUE])
       :add           (compile-frame ["add" S S S CR CR])
       :replace       (compile-frame ["replace" S S S CR CR])
       :delete        (compile-frame ["delete" CR])
@@ -33,7 +40,7 @@
       :deleted       (compile-frame ["DELETED"])
       :get           (compile-frame ["get" CR])
       :gets          (compile-frame ["gets" CR])
-      :value         (compile-frame ["VALUE" S S CR CR])
+      :value         (compile-frame ["VALUE" S S VALUE])
       :end           (compile-frame ["END"])
       :client_error  (compile-frame ["CLIENT_ERROR" CR])
       :server_error  (compile-frame ["SERVER_ERROR" CR])

@@ -21,7 +21,7 @@
   (second decoded))
 
 (defn cmd-set-value [decoded]
-  (nth decoded 5))
+  (nth decoded 4))
 
 (defn cmd-gets-keys [decoded]
   (clojure.string/split (first (rest decoded)) #" "))
@@ -47,14 +47,16 @@
   (let [response (process-fn cmd payload)]
     (cond 
       (:values response)
-      (and
-        (enqueue channel 
-                 (vec (flatten
-                        (concat 
-                          (map 
-                            (fn [t]
-                              ["VALUE" (:key t) "0" (str (:length t)) (:value t)]) 
-                            (:values response))))))
+      (if (> (count (:values response)) 0)
+        (and
+          (enqueue channel 
+                   (vec (flatten
+                          (concat 
+                            (map 
+                              (fn [t]
+                                ["VALUE" (:key t) "0" (:value t)]) 
+                              (:values response))))))
+        (enqueue channel ["END"]))
         (enqueue channel ["END"]))
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))

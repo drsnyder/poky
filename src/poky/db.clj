@@ -16,7 +16,7 @@
                (.setJdbcUrl (str "jdbc:postgresql://" subname))
                (.setUser user)
                (.setPassword password)
-               (.setMinPoolSize 10)
+               (.setMinPoolSize 3)
                ;; expire excess connections after 30 minutes of inactivity:
                (.setMaxIdleTimeExcessConnections (* 30 60))
                ;; expire connections after 3 hours of inactivity:

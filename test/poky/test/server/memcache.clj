@@ -12,7 +12,7 @@
              lamina/IEnqueue
              (enqueue [ch v] v))
 
-(def server-set-test ["SET" "abc" "0" "0" "3" "123"])
+(def server-set-test ["SET" "abc" "0" "0" "123"])
 (def server-get-test ["get" "abc def"])
 (def server-delete-test ["delete" "abc"])
 

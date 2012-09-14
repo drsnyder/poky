@@ -24,6 +24,9 @@
   (first (decode MEMCACHE (first get-tests))) => "get")
 
 (fact 
+  (second (decode MEMCACHE (first get-tests))) => "abc def")
+
+(fact 
   (first (decode MEMCACHE (first gets-tests))) => "gets")
 
 (fact 

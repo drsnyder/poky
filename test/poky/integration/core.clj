@@ -14,6 +14,9 @@
   (fact (:key (first (:values r))) => "abc")
   (fact (:value (first (:values r))) => "123"))
 
+(let [r (poky/gets ["hhonhrgabsaboneuhsodou"])]
+      (fact (:values r) => []))
+
 (let [r (poky/delete "abc")]
   (fact (:deleted r) => 1))
 
