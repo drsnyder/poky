@@ -1,6 +1,6 @@
 # Poky
 
-A key value store built on [PostgreSQL](http://www.postgresql.org/) that speaks the
+A key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks the
 [memcached](https://github.com/memcached/memcached/blob/master/doc/protocol.txt)
 protocol. Poky is built using Clojure on top of the asynchronous communication
 framework [Aleph](https://github.com/ztellman/aleph).
@@ -10,7 +10,7 @@ framework [Aleph](https://github.com/ztellman/aleph).
 Many organizations have a significant investment in, and confidence 
 supporting PostgreSQL. They have come to rely on its proven architecture and its
 reputation for reliability and data integrity. Poky is an attempt to augment
-this investment by providing a simple key value store using an API (memcached) that already
+this investment by providing a simple key-value store using an API (memcached) that already
 exists for most popular languages. 
 
 Additionally, some datasets are key-value in nature but are too big to
