@@ -29,10 +29,14 @@
 (defn cmd-delete-key [decoded]
   (second decoded))
 
+
+(defn tuples-to-values [tuples]
+  (vec (flatten (map (fn [t] ["VALUE" (:key t) "0" (:value t)]) tuples))))
+
+
 (defmulti cmd->dispatch
   (fn [cmd channel client-info payload process-fn] (cmd-to-keyword cmd)))
 
-; TODO: finish up delete
 
 (defmethod cmd->dispatch :set
   [cmd channel client-info payload process-fn] 
@@ -48,15 +52,7 @@
     (cond 
       (:values response)
       (if (> (count (:values response)) 0)
-        (and
-          (enqueue channel 
-                   (vec (flatten
-                          (concat 
-                            (map 
-                              (fn [t]
-                                ["VALUE" (:key t) "0" (:value t)]) 
-                              (:values response))))))
-        (enqueue channel ["END"]))
+        (enqueue channel (reduce conj (tuples-to-values (:values response)) ["END"]))
         (enqueue channel ["END"]))
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))
@@ -86,20 +82,24 @@
 
 (defmethod storage->dispatch :set
   [cmd req] 
+  {:pre [(= (count req) 5)]}
   (poky/add 
     (cmd-set-key req)
     (cmd-set-value req)))
 
 (defmethod storage->dispatch :get
   [cmd req]
+  {:pre [(= (count req) 2)]}
   (poky/gets (cmd-gets-keys req)))
 
 (defmethod storage->dispatch :gets
   [cmd req]
+  {:pre [(= (count req) 2)]}
   (storage->dispatch :get req))
 
 (defmethod storage->dispatch :delete
   [cmd req]
+  {:pre [(= (count req) 2)]}
   (poky/delete (cmd-delete-key req)))
 
 (defmethod storage->dispatch :default
