@@ -30,8 +30,10 @@
   (second decoded))
 
 
-(defn tuples-to-values [tuples]
-  (vec (flatten (map (fn [t] ["VALUE" (:key t) "0" (:value t)]) tuples))))
+(defn enqueue-tuples [ch tuples]
+  (doall 
+    (map #(enqueue ch %)
+       (map (fn [t] ["VALUE" (:key t) "0" (:value t)]) tuples))))
 
 
 (defmulti cmd->dispatch
@@ -52,7 +54,9 @@
     (cond 
       (:values response)
       (if (> (count (:values response)) 0)
-        (enqueue channel (reduce conj (tuples-to-values (:values response)) ["END"]))
+        (do 
+          (enqueue-tuples channel (:values response))
+          (enqueue channel ["END"]))
         (enqueue channel ["END"]))
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))

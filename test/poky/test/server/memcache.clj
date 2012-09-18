@@ -1,16 +1,10 @@
 (ns poky.test.server.memcache
   (:use [poky.server.memcache]
         [clojure.test]
-        [midje.sweet])
-  (:require [lamina.core.utils :as lamina]))
+        [midje.sweet]
+        [lamina.core]))
 
-(defprotocol Queueable
-             (enqueue [ch v]))
 
-(extend-type clojure.lang.PersistentVector
-             Queueable
-             lamina/IEnqueue
-             (enqueue [ch v] v))
 
 (def server-set-test ["SET" "abc" "0" "0" "123"])
 (def server-get-test ["get" "abc def"])
@@ -40,9 +34,8 @@
 (fact 
   (cmd-delete-key server-delete-test) => "abc")
 
-; these are working as push-through unit tests via the protocol definition above.
-; in practice the return value won't look like this as IEnqueue.enqueue should 
-; return true if the message was enqueued to the channel
+; FIXME: create a wrapper function that does the (let ..), creates the channel
+; calls the function, consumes the channel, and tests the results
 
 (fact 
   (cmd->dispatch "set" [] {} server-set-test 
@@ -61,18 +54,29 @@
   (cmd->dispatch "set" [] {} server-set-test 
                  (fn [cmd p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
 
+(let [c (channel)
+      r (enqueue-tuples c [{:key "abc" :value "123"} 
+                           {:key "def" :value "456"}])
+      s (channel-seq c)]
+  (fact s => 
+        [["VALUE" "abc" "0" "123"] ["VALUE" "def" "0" "456"]]))
 
-(fact 
-  (cmd->dispatch "get" [] {} server-get-test 
+
+(let [c (channel)
+      r (cmd->dispatch "get" c {} server-get-test 
                  (fn [cmd p] {:values [{:key "abc" :value "123"} 
-                                   {:key "def" :value "456"}]})) => 
-  ; fix enqueue above to accumulate
-  ;["VALUE" "abc" "0" "3" "123" "VALUE" "def" "0" "3" "456" "END"]
-  ["END"])
+                                   {:key "def" :value "456"}]}))
+      s (channel-seq c)]
+  (fact s =>  
+        [["VALUE" "abc" "0" "123"] ["VALUE" "def" "0" "456"] ["END"]]))
+
+
 
 (fact 
   (cmd->dispatch "get" [] {} server-get-test 
-                 (fn [cmd p] {:error "something bad"})) => ["SERVER_ERROR" "something bad"])
+                 (fn [cmd p] {:error "something bad"})) => 
+  ["SERVER_ERROR" "something bad"])
+
 (fact 
   (cmd->dispatch "get" [] {} server-get-test 
                  (fn [cmd p] {})) => ["SERVER_ERROR" "oops, something bad happened while getting."])
