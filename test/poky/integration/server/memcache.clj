@@ -39,35 +39,16 @@
   (fact (find-key r "abc") => falsey))
 
 
-(fact
-  (memcache-handler [] {} ["SET" "abc" "0" "3" "123"]) => ["STORED"])
-
-(let [s1 (memcache-handler [] {} ["SET" "abc" "0" "3" "123"])
-      s2 (memcache-handler [] {} ["SET" "def" "0" "3" "456"])
-      r (memcache-handler [] {} ["get" "abc def"])
-      s (set r)]
-  ;["VALUE" "abc" "0" "123" "VALUE" "def" "0" "456" "END"])
-  (fact
-    (first r) => "VALUE")
-  (fact 
-    (contains? s "abc") => true)
-  (fact 
-    (contains? s "123") => true)
-  (fact
-    (nth r 4) => "VALUE")
-  (fact 
-    (contains? s "def") => true)
-  (fact 
-    (contains? s "456") => true)
-  (fact
-    (nth r 8) => "END"))
+(defn pass-through-memcache-handler-test [in expected]
+  (let [c (channel)
+        r (memcache-handler c {} in)
+        s (channel-seq c)]
+    (fact s => expected)))
 
 
-(let [s1 (memcache-handler [] {} ["SET" "abc" "0" "3" "123"])
-      r (memcache-handler [] {} ["get" "abc"])]
-  (fact r => ["VALUE" "abc" "0" "123" "END"]))
-
-
-(fact 
-  (memcache-handler [] {} server-delete-test) => ["DELETED"])
+(pass-through-memcache-handler-test ["SET" "abc" "0" "3" "123"] (list ["STORED"]))
+(pass-through-memcache-handler-test ["SET" "def" "0" "3" "456"] (list ["STORED"]))
+(pass-through-memcache-handler-test ["get" "abc"] (list ["VALUE" "abc" "0" "123"] ["END"]))
+(pass-through-memcache-handler-test ["get" "abc def"] (list ["VALUE" "abc" "0" "123"] ["VALUE" "def" "0" "456"] ["END"]))
+(pass-through-memcache-handler-test ["delete" "abc"] (list ["DELETED"]))
 
