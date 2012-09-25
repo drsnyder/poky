@@ -5,6 +5,9 @@
   (:require [poky.protocol.memcache :as pm]
             [poky.core :as poky]))
 
+(def set-config! poky/set-config!)
+(def connect! poky/connect!)
+
 (defn cmd-args-len [decoded]
   (count (rest decoded)))
 

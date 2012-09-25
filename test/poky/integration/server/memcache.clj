@@ -4,6 +4,7 @@
         [midje.sweet]
         [lamina.core]))
 
+(connect!)
 
 (def server-delete-test ["delete" "abc"])
 

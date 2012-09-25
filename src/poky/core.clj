@@ -1,8 +1,11 @@
 (ns poky.core
-  (:use [poky.vars :only [*table*]]
-        [clojure.java.jdbc :as sql :only [with-connection]])
-  (:require [poky.db :as db]))
+  (:use [clojure.java.jdbc :as sql :only [with-connection]])
+  (:require [poky.db :as db]
+            [poky.vars :as vars]))
 
+
+(def set-config! vars/set-config!)
+(def connect! db/connect!)
 
 ; is there a multi-key/value pair version of update or insert?
 (defn add [k v]
@@ -20,7 +23,7 @@
     {:values 
      (db/query 
               (format "SELECT key, value FROM %s WHERE key IN (%s)" 
-                      poky.vars/*table* 
+                      (vars/get-table)
                       (clojure.string/join "," (map #(sql/as-quoted-str "'" %) ks))))}
     (catch Exception e {:error (str "Exception: " (.getMessage e))})))
 

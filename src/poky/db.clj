@@ -6,27 +6,32 @@
   (:import [java.lang.reflect Method]))
 
 
-; subname 127.0.0.1:3306/poky
+; jdbc-url jdbc:postgresql://127.0.0.1:5432/poky
 ; user 
 ; password
 (defn pool
-  [subname user password]
-  (let [cpds (doto (ComboPooledDataSource.)
-               (.setDriverClass "org.postgresql.Driver") 
-               (.setJdbcUrl (str "jdbc:postgresql://" subname))
-               (.setUser user)
-               (.setPassword password)
-               (.setMinPoolSize 3)
-               ;; expire excess connections after 30 minutes of inactivity:
-               (.setMaxIdleTimeExcessConnections (* 30 60))
-               ;; expire connections after 3 hours of inactivity:
-               (.setMaxIdleTime (* 3 60 60)))] 
-    {:datasource cpds}))
+  ([config]
+   (let [cpds (doto (ComboPooledDataSource.)
+                (.setDriverClass (:driver config)) 
+                (.setJdbcUrl (:jdbc-url config))
+                (.setUser (:user config))
+                (.setPassword (:password config))
+                (.setMinPoolSize 3)
+                ;; expire excess connections after 30 minutes of inactivity:
+                (.setMaxIdleTimeExcessConnections (* 30 60))
+                ;; expire connections after 3 hours of inactivity:
+                (.setMaxIdleTime (* 3 60 60)))] 
+     {:datasource cpds}))
+  ([jdbc-url user password]
+   (pool jdbc-url user password "org.postgresql.Driver")))
 
 
-(def pooled-db (delay (pool pvars/*subname* pvars/*user* pvars/*password*)))
+(defn connect! []
+  (pvars/set-connection! 
+    (delay (pool (pvars/get-config)))))
 
-(defn connection [] @pooled-db)
+(defn connection [] 
+  (deref (pvars/get-connection)))
 
 (defmacro with-conn
   [& body]
