@@ -1,5 +1,7 @@
 # Poky
 
+Poky is a work in progress. 
+
 A key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks the
 [memcached](https://github.com/memcached/memcached/blob/master/doc/protocol.txt)
 protocol. Poky is built using Clojure on top of the asynchronous communication
