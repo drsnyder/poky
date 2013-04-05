@@ -6,3 +6,6 @@
 /.lein-failures
 /checkouts
 /.lein-deps-sum
+/.lein-repl-history
+target
+test-clients
