@@ -5,7 +5,7 @@
 (defrecord JDBCKeyValueStore [conn table key-column value-column]
   kv.core/KeyValueProtocol
   (get* [this k]
-    (get (store/jdbc-get @conn table key-column k) (keyword value-column)))
+    (store/jdbc-get @conn table key-column k))
   (mget* [this ks]
     (when-let [rows (store/jdbc-mget @conn table key-column ks)]
       (into {} (map vec 
