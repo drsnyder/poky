@@ -5,6 +5,9 @@
   (:require [poky.protocol.memcache :as pm]
             [poky.core :as poky]))
 
+; Experimental
+; Requires refactoring with poky.kv.jdbc
+
 (defn cmd-args-len [decoded]
   (count (rest decoded)))
 

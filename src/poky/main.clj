@@ -1,13 +1,19 @@
 (ns poky.main
   (:gen-class)
-  (:use clojure.tools.cli)
-  (:require [poky.server.memcache :as poky]))
-
+  (:require 
+    (poky.kv [memory :as m]
+             [jdbc :as kvstore]
+             [core :refer :all])
+    [poky.kv.jdbc.util :as jdbc-util]
+    [poky.kv.jdbc.text :as text]
+    [poky.protocol.http.jdbc.text :as http]
+    [poky.system :as system]
+    [environ.core :refer [env]]))
 
 (defn -main [& args]
   (let [[opts args _] (cli args
                            #_"Poky server"
-                           ["-p" "--port" "Listen on this port" :default 11219 :parse-fn #(Integer. %)])
+                           ["-p" "--port" "Listen on this port" :default 8080 :parse-fn #(Integer. %)])
         port          (:port opts)]
     (println opts)
     (println args)

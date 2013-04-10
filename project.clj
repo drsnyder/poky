@@ -19,5 +19,5 @@
             :distribution :repo
             :comments "same as Clojure"}
   :repl-options {:init-ns poky.repl-helper}
-  :main poky.main
+  :main poky.protocol.http.jdbc.text.main
   :jvm-opts ["-server"])
