@@ -2,27 +2,37 @@
   (:require [poky.kv.core :as kv.core]
             [poky.kv.jdbc.util :as store]))
 
-(defrecord JDBCKeyValueStore [conn table key-column value-column]
+; FIXME: deprecate this. it's not necessary
+(extend-type poky.kv.core.RDMSKeyValueStore
   kv.core/KeyValueProtocol
+  (get* [this k params]
+    (store/jdbc-get (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) k))
   (get* [this k]
-    (store/jdbc-get @conn table key-column k))
-  (mget* [this ks]
-    (when-let [rows (store/jdbc-mget @conn table key-column ks)]
+    (store/jdbc-get (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) k))
+  (mget* [this ks params]
+    (when-let [rows (store/jdbc-mget (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) ks)]
       (into {} (map vec 
                     (for [r rows] (list
-                               (get r (keyword key-column))
-                               (get r (keyword value-column))))))))
+                               (get r (keyword (kv.core/key-column this))
+                               (get r (keyword (kv.core/value-column this))))))))))
+  (mget* [this ks]
+    (kv.core/mget* this ks nil))
   (set* [this k value]
-    (store/jdbc-set @conn table key-column value-column k value))
+    (store/jdbc-set (kv.core/conn this) 
+                    (kv.core/table this) 
+                    (kv.core/key-column this) 
+                    (kv.core/value-column this) 
+                    k 
+                    value))
   (delete* [this k]
-    (store/jdbc-mget @conn table key-column k)))
+    (store/jdbc-mget (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) k)))
     
 (defn create
   ([dsn table key-column value-column]
-   (JDBCKeyValueStore. 
-     (store/pool (store/create-db-spec dsn)) 
+   (poky.kv.core.RDMSKeyValueStore.
+     @(store/pool (store/create-db-spec dsn)) 
      table 
      key-column 
      value-column))
   ([dsn]
-   (create dsn "poky" "key" "value")))
+   (create dsn "poky_text" "key" "data")))

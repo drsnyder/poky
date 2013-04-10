@@ -36,6 +36,18 @@ To start a new instance of Poky:
 By default, the server listens on 11219. To change the listen port, use the -p
 option.
 
+## HTTP Head Notes
+
+    # on osx with brew
+    brew install v3
+    git clone https://code.google.com/p/plv8js/
+    cd plv8js
+    PG_XS=1 make install
+
+
+    # then in pg
+    CREATE EXTENSION plv8;
+
 ## License
 
 Copyright (C) 2012 Damon Snyder 

@@ -1,8 +1,5 @@
 (ns poky.system
-  (:require [poky.kv.core :as kvstore]
-            (poky.protocol
-              [http :as http])
-            [environ.core :refer [env]]
+  (:require [environ.core :refer [env]]
             [ring.adapter.jetty :as jetty]))
 
 (def ^:private default-jetty-max-threads 25)

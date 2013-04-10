@@ -3,8 +3,12 @@
 
 (defrecord MemoryKeyValueStore [^:clojure.lang.Atom data]
   kv.core/KeyValueProtocol
+  (get* [this k params]
+    (get @data k))
   (get* [this k]
     (get @data k))
+  (mget* [this ks params]
+    (select-keys @data ks))
   (mget* [this ks]
     (select-keys @data ks))
   (set* [this k value]

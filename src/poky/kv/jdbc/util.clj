@@ -4,6 +4,8 @@
             [clojure.java.jdbc :as sql])
   (:import com.mchange.v2.c3p0.ComboPooledDataSource))
 
+(def ^:private default-pool-size 3)
+
 (defn create-db-spec
   ([dsn driver]
    (let [uri (java.net.URI. dsn)
@@ -22,17 +24,16 @@
    (create-db-spec dsn "org.postgresql.Driver")))
 
 (defn pool
-  [spec]
-  (delay 
-    (let [cpds (doto (ComboPooledDataSource.)
-                 (.setDriverClass (:classname spec)) 
-                 (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
-                 (.setUser (:user spec))
-                 (.setPassword (:password spec))
-                 (.setMinPoolSize 3)
-                 (.setMaxIdleTimeExcessConnections (* 30 60))
-                 (.setMaxIdleTime (* 3 60 60)))] 
-      {:datasource cpds})))
+  [spec &{:keys [min-pool-size] :or {min-pool-size default-pool-size}}]
+  (let [cpds (doto (ComboPooledDataSource.)
+               (.setDriverClass (:classname spec)) 
+               (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
+               (.setUser (:user spec))
+               (.setPassword (:password spec))
+               (.setMinPoolSize min-pool-size)
+               (.setMaxIdleTimeExcessConnections (* 30 60))
+               (.setMaxIdleTime (* 3 60 60)))] 
+      {:datasource cpds}))
 
 
 (defn jdbc-get
@@ -69,4 +70,5 @@
     conn
     (sql/delete-rows
       table [(format "%s = ?" key-column) k])))
+
 
