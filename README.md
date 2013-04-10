@@ -2,7 +2,7 @@
 
 Poky is a work in progress. 
 
-A key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks HTTP. Poky uses Clojure and the web framework
+Poky is a key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks HTTP. Poky uses Clojure and the web framework
 Compojure to provide an HTTP head.
 
 Experimental WIP: The [memcached](https://github.com/memcached/memcached/blob/master/doc/protocol.txt)
@@ -47,6 +47,8 @@ Getting data in and out:
 
     # getting data out
     $ curl -X GET http://localhost:8080/key
+    {"key":"value"}
+    $ curl -H'Accept: text/plain' -X GET http://localhost:8080/key
     value
 
 

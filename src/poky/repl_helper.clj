@@ -1,7 +1,6 @@
 (ns poky.repl-helper
   (:require 
     (poky.kv [memory :as m]
-             [jdbc :as kvstore]
              [core :refer :all])
     [poky.kv.jdbc.util :as jdbc-util]
     [poky.kv.jdbc.text :as text]

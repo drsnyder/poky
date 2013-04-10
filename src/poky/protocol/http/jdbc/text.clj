@@ -4,7 +4,7 @@
                [route :as route]
                [handler :as handler])
     [ring.util.response :refer [response not-found]]
-    (ring.middleware [format-response :refer [wrap-restful-response]]
+    (ring.middleware [format-response :as format-response ]
                      [format-params :as format-params])
     [cheshire.core :as json]
     [ring.middleware.stacktrace :as trace]))
@@ -15,20 +15,23 @@
 
 (def valid-key-regex #"[\d\w-_.,]+")
 
+; FIXME: this should be split- one fn for get, one for mget
 (defn- wrap-get
   [kvstore ks params headers body]
-  (let [eks (clojure.string/split ks #",")
-        nks (count eks)]
-    (if (> nks 1)
-      (response (kv/mget* kvstore eks))
-      (response (kv/get* kvstore ks)))))
+  (response 
+    (let [eks (clojure.string/split ks #",")
+          nks (count eks)
+          multi (> nks 1)
+          ret (if multi (kv/mget* kvstore eks) (kv/get* kvstore ks))]
+    (condp = (get headers "accept")
+      "application/json" ret
+      "text/plain" (if multi (throw (Exception. "Multi get unsupported with Accept: text/plain")) (get ret ks))
+      ret))))
+
 
 
 (defn- wrap-put
   [kvstore ks params headers body]
-  (prn params) 
-  (prn headers) 
-  (prn body)
   (if (and 
         (= (get headers "content-type") "application/json")
         (get params (keyword ks) nil))
@@ -53,6 +56,10 @@
           :predicate format-params/json-request?
           :decoder #(json/parse-string % true)
           :charset format-params/get-or-guess-charset)
-        wrap-restful-response
+        (format-response/wrap-format-response
+          :predicate format-response/serializable?
+          :encoders [(format-response/make-encoder json/encode "application/json")
+                     (format-response/make-encoder identity "text/plain")]
+          :charset "utf-8")
         trace/wrap-stacktrace)))
 
