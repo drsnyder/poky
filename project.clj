@@ -2,7 +2,7 @@
   :description "A key-value store built on PostgreSQL."
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/tools.cli "0.2.2"] 
-                 [postgresql "9.0-801.jdbc4"]
+                 [postgresql/postgresql "9.0-801.jdbc4"]
                  [org.clojure/java.jdbc "0.2.3"]
                  [c3p0/c3p0 "0.9.1.2"] 
                  [gloss "0.2.2-SNAPSHOT"]

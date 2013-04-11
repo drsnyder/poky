@@ -2,7 +2,7 @@
 
 POKY_HOME=$(dirname $0)/../
 POKY_JAR=$POKY_HOME/target/poky-standalone.jar
-JMX_PORT=9191
+: ${JMX_PORT:="9191"}
 
 [ -e $POKY_HOME/config/environment ] && . $POKY_HOME/config/environment
 

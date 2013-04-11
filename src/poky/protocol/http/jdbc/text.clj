@@ -49,7 +49,8 @@
                                              body :body body-params :body-params headers :headers} 
                (let [body (slurp body)
                      body (if (empty? body) body-params body)]
-                 (wrap-put kvstore ks params headers body))))]
+                 (wrap-put kvstore ks params headers body)))
+          (route/not-found "Not Found"))]
 
     (-> (handler/api api-routes)
         (format-params/wrap-format-params
