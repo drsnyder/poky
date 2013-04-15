@@ -25,11 +25,16 @@
   (PokySystem. (atom {:store store :server server})))
 
 (defn cli-runner [store app & args]
-  (let [[opts args _] (cli/cli args
+  (let [[opts args banner] (cli/cli args
                            ["-p" "--port" "Listen on this port" :default 8080 :parse-fn #(Integer. %)]
                            ["-d" "--dsn" "Database DSN" :default (env :database-url "")])
         port          (:port opts)
-        dsn           (:dsn opts)
-        S (create-system (store dsn) app)]
+        dsn           (:dsn opts)]
+
+    (when (empty? dsn)
+      (println "--dsn is required.")
+      (println banner)
+      (System/exit 1))
+
     (println (format "Starting up on port %d." port))
-    (start S port)))
+    (start (create-system (store dsn) app) port)))
