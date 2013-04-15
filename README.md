@@ -21,7 +21,7 @@ practically or cost effectively fit in-memory using redis or memcached. Poky pro
 alternative where the data set size could be much larger and bounded only by
 PostgreSQL's maximum table size (currently 32TB).
 
-## Usage
+## HTTP Server Usage
 
 Create a poky database and create the table:
 
@@ -31,29 +31,35 @@ Create a poky database and create the table:
 
 To start a new instance of Poky:
 
-    $ export DATABASE_URL=pg.server.name:5432/poky
+    $ export DATABASE_URL=postgresql://postgres@pg.server.name:5432/poky
     $ ./scripts/run.http.text.sh -p 8081
     
 OR
 
-    $ ./scripts/run.http.text.sh --dsn "postgresql://postgres@pg.server.name/poky" -p 8081
+    $ ./scripts/run.http.text.sh --dsn "postgresql://postgres@pg.server.name:5432/poky" -p 8081
 
-Getting data in and out:
+By default, the server listens on 8080. To change the listen port, use the -p
+option.
 
-    # putting data in
+For putting data in, both POST and PUT are accepted.
+
     $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8080/key
     $ curl -d"\"value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8080/key
     $ curl -d"value" -H'Content-Type: text/plain' -v -X PUT http://localhost:8080/key
 
-    # getting data out
+
+    $ curl -d"value" -X POST http://localhost:8080/key
+
+When putting data in, you should expect a status code of 200 if the request was
+completed successfully.
+
+
+When getting data out, use GET:
+
     $ curl -X GET http://localhost:8080/key
-    {"key":"value"}
-    $ curl -H'Accept: text/plain' -X GET http://localhost:8080/key
     value
 
-
-By default, the server listens on 8080. To change the listen port, use the -p
-option.
+Expect a status code of 200 and the data as the body.
 
 ## License
 

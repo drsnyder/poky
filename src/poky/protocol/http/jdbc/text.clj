@@ -11,51 +11,46 @@
 
 ;
 ; curl -d"some data" -H'Content-Type: application/text' -v -X PUT http://localhost:8080/xxx
-; curl -d'{"bla":"bar"}' -H'Content-Type: application/json' -v -X PUT http://localhost:8080/bla
+; curl -d'"some data"' -H'Content-Type: application/json' -v -X PUT http://localhost:8080/bla
 
 (def valid-key-regex #"[\d\w-_.,]+")
 
-; FIXME: this should be split- one fn for get, one for mget
 (defn- wrap-get
-  [kvstore ks params headers body]
-  (response 
-    (let [eks (clojure.string/split ks #",")
-          nks (count eks)
-          multi (> nks 1)
-          ret (if multi (kv/mget* kvstore eks) (kv/get* kvstore ks))]
-    (condp = (get headers "accept")
-      "application/json" ret
-      "text/plain" (if multi (throw (Exception. "Multi get unsupported with Accept: text/plain")) (get ret ks))
-      ret))))
-
-
+  [kvstore k params headers body]
+  (response (get (kv/get* kvstore k) k)))
 
 (defn- wrap-put
-  [kvstore ks params headers body]
-  (if (and 
-        (= (get headers "content-type") "application/json")
-        (get params (keyword ks) nil))
-    (kv/set* kvstore ks (get params (keyword ks)))
-    (kv/set* kvstore ks body))
-  (response ""))
+  [kvstore k params headers body]
+  (kv/set* kvstore k body)
+  (response "")) ; empty 200
 
 (defn api
   [kvstore]
   (let [api-routes
         (routes
-          (GET ["/:ks" :ks valid-key-regex] {{:keys [ks] :as params} :params body :body headers :headers}
-               (wrap-get kvstore ks params headers body))
-          (PUT ["/:ks" :ks valid-key-regex] {{:keys [ks] :as params} :params 
+          (GET ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params body :body headers :headers}
+               (wrap-get kvstore k params headers body))
+          (PUT ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params 
                                              body :body body-params :body-params headers :headers} 
                (let [body (slurp body)
                      body (if (empty? body) body-params body)]
-                 (wrap-put kvstore ks params headers body)))
+                 (wrap-put kvstore k params headers body)))
+          (POST ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params 
+                                             body :body body-params :body-params headers :headers} 
+               (let [body (slurp body)
+                     body (if (empty? body) body-params body)]
+                 (wrap-put kvstore k params headers body)))
           (route/not-found "Not Found"))]
 
     (-> (handler/api api-routes)
         (format-params/wrap-format-params
           :predicate format-params/json-request?
           :decoder #(json/parse-string % true)
+          :charset format-params/get-or-guess-charset)
+        ; for curl default content type & possibly others
+        (format-params/wrap-format-params
+          :predicate (format-params/make-type-request-pred #"^application/x-www-form-urlencoded")
+          :decoder identity
           :charset format-params/get-or-guess-charset)
         (format-response/wrap-format-response
           :predicate format-response/serializable?
