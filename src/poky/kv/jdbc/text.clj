@@ -36,7 +36,7 @@
                     k 
                     value))
   (delete* [this k]
-    (store/jdbc-mget (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) k)))
+    (store/jdbc-delete (kv.core/conn this) (kv.core/table this) (kv.core/key-column this) k)))
     
 (defn create
   ([dsn table key-column value-column min-pool-size]

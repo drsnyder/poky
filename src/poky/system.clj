@@ -1,9 +1,7 @@
 (ns poky.system
   (:require [environ.core :refer [env]]
-            [clojure.tools.cli :as cli]
-            [ring.adapter.jetty :as jetty]))
+            [clojure.tools.cli :as cli]))
 
-(def ^:private default-jetty-max-threads 25)
 
 (defprotocol SystemAPI 
   (store [this])
@@ -15,15 +13,14 @@
   (store [this] 
     (:store @state))
   (start [this port]
-    (swap! state assoc :running
-           (jetty/run-jetty ((:server @state) (:store @state))
-                            {:port port
-                             :max-threads default-jetty-max-threads
-                             :join? false})))
+    (let [server (get @(:state this) :server)
+          store (get @(:state this) :store)]
+      (swap! state assoc :running
+             (server store port))))
   (stop [this]
     (.stop (:running @state))))
 
-(defn create
+(defn create-system
   [store server]
   (PokySystem. (atom {:store store :server server})))
 
@@ -33,6 +30,6 @@
                            ["-d" "--dsn" "Database DSN" :default (env :database-url "")])
         port          (:port opts)
         dsn           (:dsn opts)
-        S (create (store dsn) app)]
+        S (create-system (store dsn) app)]
     (println (format "Starting up on port %d." port))
     (start S port)))

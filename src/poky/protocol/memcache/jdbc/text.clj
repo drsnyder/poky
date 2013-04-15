@@ -1,12 +1,9 @@
-(ns poky.server.memcache
-  (:use [poky util]
-        [lamina.core]
-        [aleph.tcp])
-  (:require [poky.protocol.memcache :as pm]
-            [poky.core :as poky]))
-
-; Experimental
-; Requires refactoring with poky.kv.jdbc
+(ns poky.protocol.memcache.jdbc.text
+  (:require [poky.protocol.memcache :as memcache]
+            [poky.kv.core :as kv]
+            [poky.util :refer :all]
+            [lamina.core :refer :all]
+            [aleph.tcp :refer :all]))
 
 (defn cmd-args-len [decoded]
   (count (rest decoded)))
@@ -30,8 +27,22 @@
   (clojure.string/split (first (rest decoded)) #" "))
 
 (defn cmd-delete-key [decoded]
-  (second decoded))
+  (clojure.string/trim (second decoded)))
 
+(defn create-tuple [k value]
+  {:key k :value value})
+
+(defn tuple-key [t]
+  (:key t))
+
+(defn tuple-value [t]
+  (:value t))
+
+(defn response-values [r]
+  (:values r))
+
+(defn create-response [tuples]
+  {:values tuples})
 
 (defn enqueue-tuples [ch tuples]
   (doall 
@@ -40,20 +51,20 @@
 
 
 (defmulti cmd->dispatch
-  (fn [cmd channel client-info payload process-fn] (cmd-to-keyword cmd)))
+  (fn [cmd kvstore channel client-info payload process-fn] (cmd-to-keyword cmd)))
 
 
 (defmethod cmd->dispatch :set
-  [cmd channel client-info payload process-fn] 
-  (let [response (process-fn cmd payload)]
+  [cmd kvstore channel client-info payload process-fn] 
+  (let [response (process-fn cmd kvstore payload)]
     (cond
       (or (:update response) (:insert response)) (enqueue channel ["STORED"])
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while setting."]))))
 
 (defmethod cmd->dispatch :get
-  [cmd channel client-info payload process-fn] 
-  (let [response (process-fn cmd payload)]
+  [cmd kvstore channel client-info payload process-fn] 
+  (let [response (process-fn cmd kvstore payload)]
     (cond 
       (:values response)
       (if (> (count (:values response)) 0)
@@ -65,12 +76,12 @@
       :else (enqueue channel ["SERVER_ERROR" "oops, something bad happened while getting."]))))
 
 (defmethod cmd->dispatch :gets
-  [cmd channel client-info payload process-fn] 
+  [cmd kvstore channel client-info payload process-fn] 
   (cmd->dispatch :get channel client-info payload process-fn))
 
 (defmethod cmd->dispatch :delete
-  [cmd channel client-info payload process-fn] 
-  (let [response (process-fn cmd payload)]
+  [cmd kvstore channel client-info payload process-fn] 
+  (let [response (process-fn cmd kvstore payload)]
     (cond 
       (:deleted response) (enqueue channel ["DELETED"])
       (:error response) (enqueue channel ["SERVER_ERROR" (:error response)])
@@ -79,50 +90,58 @@
 
 ; is this a client error or just error?
 (defmethod cmd->dispatch :default
-  [cmd channel client-info payload process-fn] 
+  [cmd kvstore channel client-info payload process-fn] 
   (enqueue channel ["ERROR"]))
 
 
 
 (defmulti storage->dispatch
-  (fn [cmd req] (cmd-to-keyword cmd)))
+  (fn [cmd kvstore req] (cmd-to-keyword cmd)))
 
 (defmethod storage->dispatch :set
-  [cmd req] 
+  [cmd kvstore req] 
   {:pre [(= (count req) 5)]}
-  (poky/add 
-    (cmd-set-key req)
-    (cmd-set-value req)))
+  (let [ret (kv/set* kvstore
+                     (cmd-set-key req)
+                     (cmd-set-value req))]
+    (cond 
+      (map? ret) {:insert true}
+      (seq? ret) {:update true}
+      :else {:error "unknown update type"})))
 
 (defmethod storage->dispatch :get
-  [cmd req]
+  [cmd kvstore req]
   {:pre [(= (count req) 2)]}
-  (poky/gets (cmd-gets-keys req)))
+  (let [k (cmd-gets-keys req)
+        ret (kv/mget* kvstore (cmd-gets-keys req))
+        tuples (for [r ret] (create-tuple (first r) (second r)))]
+    (create-response tuples)))
+
 
 (defmethod storage->dispatch :gets
-  [cmd req]
+  [cmd kvstore req]
   {:pre [(= (count req) 2)]}
   (storage->dispatch :get req))
 
 (defmethod storage->dispatch :delete
-  [cmd req]
+  [cmd kvstore req]
   {:pre [(= (count req) 2)]}
-  (poky/delete (cmd-delete-key req)))
+  {:deleted (first (kv/delete* kvstore (cmd-delete-key req)))})
 
 (defmethod storage->dispatch :default
-  [cmd req]
+  [cmd kvstore req]
   {:error (format "Unknown storage command %s." cmd)})
 
 
-(defn memcache-handler [ch ci cmd]
+(defn memcache-handler [kvstore ch ci cmd]
   (let [cmd-key (first cmd)]
-    (cmd->dispatch cmd-key ch ci cmd
+    (cmd->dispatch cmd-key kvstore ch ci cmd
                    storage->dispatch)))
 
-(defn handler
-  [ch ci]
-  (receive-all 
-    ch (partial memcache-handler ch ci)))
+(defn api
+  [kvstore ch ci]
+  (receive-all ch (partial memcache-handler kvstore ch ci)))
 
-(defn start-server [port]
-  (start-tcp-server handler {:port port :frame (pm/memcache-codec :utf-8)}))
+(defn start-server [kvstore port]
+  (start-tcp-server (partial api kvstore) {:port port :frame (memcache/memcache-codec :utf-8)}))
+

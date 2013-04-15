@@ -7,5 +7,5 @@
     [environ.core :refer [env]]))
 
 (defn -main [& args]
-  (apply (partial system/cli-runner text/create #'http/api) args))
+  (apply (partial system/cli-runner text/create #'http/start-server) args))
 

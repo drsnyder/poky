@@ -1,14 +1,17 @@
 (ns poky.protocol.http.jdbc.text
   (:require [poky.kv.core :as kv]
-    (compojure [core :refer :all]
-               [route :as route]
-               [handler :as handler])
-    [ring.util.response :refer [response not-found]]
-    (ring.middleware [format-response :as format-response ]
-                     [format-params :as format-params])
-    [cheshire.core :as json]
-    [ring.middleware.stacktrace :as trace]))
+            (compojure [core :refer :all]
+                       [route :as route]
+                       [handler :as handler])
+            [ring.adapter.jetty :as jetty]
+            [ring.util.response :refer [response not-found]]
+            (ring.middleware [format-response :as format-response ]
+                             [format-params :as format-params])
+            [cheshire.core :as json]
+            [environ.core :refer [env]]
+            [ring.middleware.stacktrace :as trace]))
 
+(def ^:private default-jetty-max-threads 25)
 ;
 ; curl -d"some data" -H'Content-Type: application/text' -v -X PUT http://localhost:8080/xxx
 ; curl -d'"some data"' -H'Content-Type: application/json' -v -X PUT http://localhost:8080/bla
@@ -58,4 +61,20 @@
                      (format-response/make-encoder identity "text/plain")]
           :charset "utf-8")
         trace/wrap-stacktrace)))
+
+(defn start-server
+  "Start the jetty http server. 
+  Environment:
+    MAX_THREADS
+  "
+  [kvstore port]
+  (jetty/run-jetty (api kvstore) 
+                   {:port port
+                    :max-threads (env :max-threads default-jetty-max-threads)
+                    :join? false}))
+
+    
+
+
+
 
