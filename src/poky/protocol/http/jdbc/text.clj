@@ -20,7 +20,9 @@
 
 (defn- wrap-get
   [kvstore k params headers body]
-  (response (get (kv/get* kvstore k) k)))
+  (if-let [v (get (kv/get* kvstore k) k)]
+    (response v)
+    (not-found "")))
 
 (defn- wrap-put
   [kvstore k params headers body]
