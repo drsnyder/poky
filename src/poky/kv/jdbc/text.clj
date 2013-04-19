@@ -13,10 +13,11 @@
 (defn- wrap-mget
   [conn table key-column value-column ks & params]
   (when-let [rows (store/jdbc-mget conn table key-column ks)]
-    (into {} (map vec 
-                  (for [r rows] (list
-                                  (get r (keyword key-column))
-                                  (get r (keyword value-column))))))))
+    (into {} (for [r rows
+                   :let [k (get r (keyword key-column))
+                         v (get r (keyword value-column))]
+                   :when k]
+               [k v]))))
 
 (extend-type poky.kv.core.RDMSKeyValueStore
   kv.core/KeyValueProtocol
