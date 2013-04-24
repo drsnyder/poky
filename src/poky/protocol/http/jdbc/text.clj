@@ -33,15 +33,15 @@
   [kvstore]
   (let [api-routes
         (routes
-          (GET ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params body :body headers :headers}
+          (GET ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params body :body headers :headers}
                (wrap-get kvstore k params headers body))
-          (PUT ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params 
-                                             body :body body-params :body-params headers :headers} 
+          (PUT ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params
+                                             body :body body-params :body-params headers :headers}
                (let [body (slurp body)
                      body (if (empty? body) body-params body)]
                  (wrap-put kvstore k params headers body)))
-          (POST ["/:k" :ks valid-key-regex] {{:keys [k] :as params} :params 
-                                             body :body body-params :body-params headers :headers} 
+          (POST ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params
+                                             body :body body-params :body-params headers :headers}
                (let [body (slurp body)
                      body (if (empty? body) body-params body)]
                  (wrap-put kvstore k params headers body)))
