@@ -1,2 +1,3 @@
 language: clojure
-script: lein midje poky.test.*
+lein: lein2
+script: lein2 with-profile dev midje poky.test.*
