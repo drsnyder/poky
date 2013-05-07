@@ -1,28 +1,26 @@
 (ns poky.repl-helper
-  (:require 
-    (poky.kv [memory :as m]
-             [core :refer :all])
-    [poky.kv.jdbc.util :as jdbc-util]
-    [poky.kv.jdbc.text :as text]
-    [poky.protocol.http.jdbc.text :as http]
-    [poky.protocol.memcache.jdbc.text :as memcache]
-    [poky.system :as system]
-    [environ.core :refer [env]]
-    [cheshire.core :as json]
-    [midje.repl :refer :all]
-    [clojure.java.jdbc :as sql])
+  (:require (poky.kv [memory :as kv.memory]
+                     [jdbc :as kv.jdbc]
+                     [core :refer :all])
+            [poky.protocol.http.jdbc.text :as http]
+            [poky.protocol.memcache.jdbc.text :as memcache]
+            [poky.system :as system]
+            [environ.core :refer [env]]
+            [cheshire.core :as json]
+            [midje.repl :refer :all]
+            [clojure.java.jdbc :as sql])
   (:import java.nio.ByteBuffer))
 
-(def S (system/create-system (text/create (env :database-url)) #'http/start-server))
-(def M (system/create-system (text/create (env :database-url)) #'memcache/start-server))
+(def S (delay (when-let [dsn (env :database-url)] (system/create-system (kv.jdbc/create dsn) #'http/start-server))))
+(def M (delay (when-let [dsn (env :database-url)] (system/create-system (kv.jdbc/create dsn) #'memcache/start-server))))
 
-; (system/start S 8080)
-; (system/stop S)
-; (system/start M 11212)
+; (system/start @S 8080)
+; (system/stop @S)
+; (system/start @M 11212)
 
 (declare buffer-to-string)
 (defn frame-to-string [f]
-  (apply str (concat 
+  (apply str (concat
                (clojure.walk/postwalk #(if (instance? java.nio.ByteBuffer %) 
                        (buffer-to-string %)
                        %) f))))

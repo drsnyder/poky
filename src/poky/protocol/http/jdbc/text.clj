@@ -9,43 +9,44 @@
                              [format-params :as format-params])
             [cheshire.core :as json]
             [environ.core :refer [env]]
-            [ring.middleware.stacktrace :as trace]))
+            [ring.middleware.stacktrace :as trace]
+            [clojure.string :as string]))
 
 (def ^:private default-jetty-max-threads 25)
-;
-; curl -d"some data" -H'Content-Type: application/text' -v -X PUT http://localhost:8080/xxx
-; curl -d'"some data"' -H'Content-Type: application/json' -v -X PUT http://localhost:8080/bla
 
 (def valid-key-regex #"[\d\w-_.,]+")
 
 (defn- wrap-get
-  [kvstore k params headers body]
-  (if-let [v (get (kv/get* kvstore k) k)]
+  [kvstore b k params headers body]
+  (if-let [v (get (kv/get* kvstore b k) k)]
     (response v)
     (not-found "")))
 
 (defn- wrap-put
-  [kvstore k params headers body]
-  (kv/set* kvstore k body)
+  [kvstore b k params headers body]
+  (kv/set* kvstore b k body)
   (response "")) ; empty 200
+
+(defn- put-body
+  "Returns body if non-empty otherwise body-params"
+  [body body-params]
+  (let [body (slurp body)]
+    (if (clojure.string/blank? body) body-params body)))
 
 (defn api
   [kvstore]
   (let [api-routes
         (routes
-          (GET ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params body :body headers :headers}
-               (wrap-get kvstore k params headers body))
-          (PUT ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params
-                                             body :body body-params :body-params headers :headers}
-               (let [body (slurp body)
-                     body (if (empty? body) body-params body)]
-                 (wrap-put kvstore k params headers body)))
-          (POST ["/:k" :k valid-key-regex] {{:keys [k] :as params} :params
-                                             body :body body-params :body-params headers :headers}
-               (let [body (slurp body)
-                     body (if (empty? body) body-params body)]
-                 (wrap-put kvstore k params headers body)))
-          (route/not-found "Not Found"))]
+          (GET ["/:b/:k" :b valid-key-regex :k valid-key-regex]
+               {:keys [params headers body] {:keys [b k]} :params}
+               (wrap-get kvstore b k params headers body))
+          (PUT ["/:b/:k" :b valid-key-regex :k valid-key-regex]
+               {:keys [params body body-params headers] {:keys [b k]} :params}
+               (wrap-put kvstore b k params headers (put-body body body-params)))
+          (POST ["/:b/:k" :b valid-key-regex :k valid-key-regex]
+                {:keys [params body body-params headers] {:keys [b k]} :params}
+                (wrap-put kvstore b k params headers (put-body body body-params)))
+          (route/not-found ""))]
 
     (-> (handler/api api-routes)
         (format-params/wrap-format-params
@@ -65,18 +66,12 @@
         trace/wrap-stacktrace)))
 
 (defn start-server
-  "Start the jetty http server. 
+  "Start the jetty http server.
   Environment:
-    MAX_THREADS
+  MAX_THREADS
   "
   [kvstore port]
-  (jetty/run-jetty (api kvstore) 
+  (jetty/run-jetty (api kvstore)
                    {:port port
                     :max-threads (env :max-threads default-jetty-max-threads)
                     :join? false}))
-
-    
-
-
-
-

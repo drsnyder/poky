@@ -2,15 +2,14 @@
   (:require [environ.core :refer [env]]
             [clojure.tools.cli :as cli]))
 
-
-(defprotocol SystemAPI 
+(defprotocol SystemAPI
   (store [this])
   (start [this port])
   (stop [this]))
 
 (defrecord PokySystem [state]
   SystemAPI
-  (store [this] 
+  (store [this]
     (:store @state))
   (start [this port]
     (let [server (get @(:state this) :server)
@@ -22,7 +21,7 @@
 
 (defn create-system
   [store server]
-  (PokySystem. (atom {:store store :server server})))
+  (->PokySystem (atom {:store store :server server})))
 
 (defn cli-runner [store app & args]
   (let [[opts args banner] (cli/cli args
