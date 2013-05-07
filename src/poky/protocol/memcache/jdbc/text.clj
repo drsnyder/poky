@@ -5,6 +5,8 @@
             [lamina.core :refer :all]
             [aleph.tcp :refer :all]))
 
+(def ^:private default-bucket "memcache")
+
 (defn cmd-args-len [decoded]
   (count (rest decoded)))
 
@@ -99,9 +101,10 @@
   (fn [cmd kvstore req] (cmd-to-keyword cmd)))
 
 (defmethod storage->dispatch :set
-  [cmd kvstore req] 
+  [cmd kvstore req]
   {:pre [(= (count req) 5)]}
   (let [ret (kv/set* kvstore
+                     default-bucket
                      (cmd-set-key req)
                      (cmd-set-value req))]
     (cond 
@@ -113,7 +116,7 @@
   [cmd kvstore req]
   {:pre [(= (count req) 2)]}
   (let [k (cmd-gets-keys req)
-        ret (kv/mget* kvstore (cmd-gets-keys req))
+        ret (kv/mget* kvstore default-bucket (cmd-gets-keys req))
         tuples (for [r ret] (create-tuple (first r) (second r)))]
     (create-response tuples)))
 
@@ -126,7 +129,7 @@
 (defmethod storage->dispatch :delete
   [cmd kvstore req]
   {:pre [(= (count req) 2)]}
-  {:deleted (first (kv/delete* kvstore (cmd-delete-key req)))})
+  {:deleted (first (kv/delete* default-bucket kvstore (cmd-delete-key req)))})
 
 (defmethod storage->dispatch :default
   [cmd kvstore req]

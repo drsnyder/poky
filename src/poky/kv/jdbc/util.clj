@@ -1,7 +1,4 @@
 (ns poky.kv.jdbc.util
-  (:require [poky.kv.core :as kv.core]
-            [environ.core :refer [env]]
-            [clojure.java.jdbc :as sql])
   (:import com.mchange.v2.c3p0.ComboPooledDataSource))
 
 (def ^:private default-pool-size 3)
@@ -34,41 +31,3 @@
                (.setMaxIdleTimeExcessConnections (* 30 60))
                (.setMaxIdleTime (* 3 60 60)))] 
       {:datasource cpds}))
-
-
-(defn jdbc-get
-  [conn table key-column k]
-  (sql/with-connection 
-    conn
-    (sql/with-query-results 
-      results
-      [(format "SELECT %s.* FROM %s WHERE %s = ?" table table key-column) k]
-      (first (vec results)))))
-
-(defn jdbc-mget
-  [conn table key-column ks]
-  (let [query (format "SELECT %s.* FROM %s WHERE %s IN (%s)" table table key-column 
-                      (clojure.string/join "," (take (count ks) (cycle ["?"]))))]
-    (sql/with-connection 
-      conn
-      (sql/with-query-results results
-                              (vec (flatten [query ks]))
-                              (vec results)))))
-
-(defn jdbc-set
-  [conn table key-column value-column k value]
-  (sql/with-connection 
-    conn
-    (sql/update-or-insert-values 
-      table [(format "%s = ?" key-column) k] 
-      {(keyword key-column) k (keyword value-column) value})))
-
-
-(defn jdbc-delete
-  [conn table key-column k]
-  (sql/with-connection
-    conn
-    (sql/delete-rows
-      table [(format "%s = ?" key-column) k])))
-
-
