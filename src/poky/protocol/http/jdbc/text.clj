@@ -9,8 +9,7 @@
                              [format-params :as format-params])
             [cheshire.core :as json]
             [environ.core :refer [env]]
-            [ring.middleware.stacktrace :as trace]
-            [clojure.string :as string]))
+            [ring.middleware.stacktrace :as trace]))
 
 (def ^:private default-jetty-max-threads 25)
 
