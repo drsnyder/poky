@@ -38,13 +38,14 @@
 (defrecord JdbcKeyValue [conn]
   kv.core/KeyValueProtocol
   (get* [this b k params]
-    (jdbc-get conn b k))
+    (kv.core/get* this b k))
   (get* [this b k]
-    (jdbc-get conn b k))
+    (when-let [row (jdbc-get conn b k)]
+      {(:key row) (:data row)}))
   (mget* [this b ks params]
-    (jdbc-mget conn b ks))
+    (kv.core/mget* this b ks))
   (mget* [this b ks]
-    (jdbc-mget conn b ks))
+    (into {} (map (juxt :key :data) (jdbc-mget conn b ks))))
   (set* [this b k value]
     (jdbc-set conn b k value))
   (delete* [this b k]
