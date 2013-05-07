@@ -20,7 +20,7 @@
                             (string/join "," (repeat (count ks) "?")))
                     b]
                    ks))
-      results)))
+      (doall results))))
 
 (defn jdbc-set
   [conn b k v]
