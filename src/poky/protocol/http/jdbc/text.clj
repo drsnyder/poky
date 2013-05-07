@@ -21,6 +21,12 @@
     (response v)
     (not-found "")))
 
+(defn- wrap-mget
+  [kvstore b ks]
+  (if-let [v (kv/mget* kvstore b ks)]
+    (response v)
+    (not-found "")))
+
 (defn- wrap-put
   [kvstore b k params headers body]
   (kv/set* kvstore b k body)
@@ -36,6 +42,10 @@
   [kvstore]
   (let [api-routes
         (routes
+          (GET ["/:b" :b valid-key-regex]
+               {{ks :keys b :b} :params}
+               (if (and ks (every? string? ks))
+                 (wrap-mget kvstore b ks)))
           (GET ["/:b/:k" :b valid-key-regex :k valid-key-regex]
                {:keys [params headers body] {:keys [b k]} :params}
                (wrap-get kvstore b k params headers body))
