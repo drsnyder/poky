@@ -4,7 +4,7 @@
                        [route :as route]
                        [handler :as handler])
             [ring.adapter.jetty :as jetty]
-            [ring.util.response :refer [response not-found]]
+            [ring.util.response :refer [response not-found charset]]
             (ring.middleware [format-response :as format-response ]
                              [format-params :as format-params])
             [cheshire.core :as json]
@@ -32,6 +32,12 @@
   (let [body (slurp body)]
     (if (clojure.string/blank? body) body-params body)))
 
+(defn- wrap-charset
+  "Handler chain fn for wrapping the charset of the response."
+  [handler char-set]
+  (fn [req]
+    (charset (handler req) char-set)))
+
 (defn api
   [kvstore]
   (let [api-routes
@@ -48,21 +54,17 @@
           (route/not-found ""))]
 
     (-> (handler/api api-routes)
-        (format-params/wrap-format-params
-          :predicate format-params/json-request?
-          :decoder #(json/parse-string % true)
-          :charset format-params/get-or-guess-charset)
-        ; for curl default content type & possibly others
-        (format-params/wrap-format-params
-          :predicate (format-params/make-type-request-pred #"^application/x-www-form-urlencoded")
-          :decoder identity
-          :charset format-params/get-or-guess-charset)
-        (format-response/wrap-format-response
-          :predicate format-response/serializable?
-          :encoders [(format-response/make-encoder json/encode "application/json")
-                     (format-response/make-encoder identity "text/plain")]
-          :charset "utf-8")
-        trace/wrap-stacktrace)))
+      (format-params/wrap-format-params
+        :predicate format-params/json-request?
+        :decoder #(json/parse-string % true)
+        :charset "utf-8")
+      ; for curl default content type & possibly others
+      (format-params/wrap-format-params
+        :predicate (format-params/make-type-request-pred #"^application/x-www-form-urlencoded")
+        :decoder identity
+        :charset "utf-8")
+      (wrap-charset "utf-8")
+      trace/wrap-stacktrace)))
 
 (defn start-server
   "Start the jetty http server.
