@@ -1,11 +1,9 @@
 (ns poky.protocol.http.jdbc.text.main
   (:gen-class)
-  (:require 
-    [poky.kv.jdbc.text :as text]
-    [poky.protocol.http.jdbc.text :as http]
-    [poky.system :as system]
-    [environ.core :refer [env]]))
+  (:require [poky.kv.jdbc :as jdbc]
+            [poky.protocol.http.jdbc.text :as http]
+            [poky.system :as system]))
 
 (defn -main [& args]
-  (apply (partial system/cli-runner text/create #'http/start-server) args))
+  (apply system/cli-runner jdbc/create #'http/start-server args))
 
