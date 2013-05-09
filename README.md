@@ -63,6 +63,5 @@ Expect a status code of 200 and the data as the body.
 
 ## Contributors
 
-[Logan Linn](https://github.com/loganlinn)
-
-[Damon Snyder](https://github.com/drsnyder)
+ * [Logan Linn](https://github.com/loganlinn)
+ * [Damon Snyder](https://github.com/drsnyder)
