@@ -1,3 +1,5 @@
+; TODO: this needs to be brought up-to-date and migrated to midje
+; let's use :integration as a tag instead of a directory
 (ns poky.integration.server.memcache
   (:use [poky.server.memcache]
         [clojure.test]
