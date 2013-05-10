@@ -33,7 +33,7 @@
     (if (clojure.string/blank? body) body-params body)))
 
 (defn- wrap-charset
-  "Handler chain fn for wrapping the charset of the response."
+  "Middleware for setting the charset of the response."
   [handler char-set]
   (fn [req]
     (charset (handler req) char-set)))
