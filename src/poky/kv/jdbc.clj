@@ -1,5 +1,5 @@
 (ns poky.kv.jdbc
-  (:require [poky.kv.core :as kv.core]
+  (:require [poky.kv.core :refer :all]
             [poky.kv.jdbc.util :refer [create-db-spec pool]]
             [clojure.java.jdbc :as sql]
             [clojure.string :as string] ))
@@ -36,14 +36,14 @@
       ["bucket=? AND key=?" b k])))
 
 (defrecord JdbcKeyValue [conn]
-  kv.core/KeyValueProtocol
+  KeyValue
   (get* [this b k params]
-    (kv.core/get* this b k))
+    (get* this b k))
   (get* [this b k]
     (when-let [row (jdbc-get conn b k)]
       {(:key row) (:data row)}))
   (mget* [this b ks params]
-    (kv.core/mget* this b ks))
+    (mget* this b ks))
   (mget* [this b ks]
     (into {} (map (juxt :key :data) (jdbc-mget conn b ks))))
   (set* [this b k value]

@@ -1,16 +1,16 @@
 (ns poky.kv.memory
-  (:require [poky.kv.core :as kv.core]))
+  (:require [poky.kv.core :refer :all]))
 
 (defrecord MemoryKeyValueStore [^:clojure.lang.Atom data]
-  kv.core/KeyValueProtocol
-  (get* [this b k params]
-    (get-in @data [b k]))
+  KeyValue
   (get* [this b k]
     (get-in @data [b k]))
-  (mget* [this b ks params]
-    (select-keys (@data b) ks))
+  (get* [this b k params]
+    (get* this b k))
   (mget* [this b ks]
     (select-keys @data ks))
+  (mget* [this b ks params]
+    (select-keys (@data b) ks))
   (set* [this b k value]
     (swap! data assoc-in [b k] value))
   (delete* [this b k]
