@@ -1,0 +1,2 @@
+# Some required settings for the rest of the startup process
+WORKING_DIR=$PWD
