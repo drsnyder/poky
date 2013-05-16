@@ -9,3 +9,5 @@
 /.lein-repl-history
 target
 test-clients
+run
+log
