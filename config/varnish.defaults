@@ -18,7 +18,7 @@ NFILES=8192
 SHMEM=82000
 
 # Main configuration file. 
-VARNISH_VCL_CONF=$WORKING_DIR/../config/default.vcl
+VARNISH_VCL_CONF=$WORKING_DIR/config/default.vcl
 
 #
 # Default address and port to bind to
@@ -64,7 +64,7 @@ SESSION_LINGER=50
 
 ## 
 ##
-VARNISHD_PID=$WORKING_DIR/../run/varnish.pid
+VARNISHD_PID=$WORKING_DIR/run/varnish.pid
 DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT},127.0.0.1:${VARNISH_LISTEN_PORT} \
              -f ${VARNISH_VCL_CONF} \
              -T ${VARNISH_ADMIN_LISTEN_ADDRESS}:${VARNISH_ADMIN_LISTEN_PORT} \

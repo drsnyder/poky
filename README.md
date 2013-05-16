@@ -61,6 +61,10 @@ When getting data out, use GET:
 
 Expect a status code of 200 and the data as the body.
 
+## Dependencies
+
+ * [daemonize](http://software.clapper.org/daemonize/)
+
 ## Contributors
 
  * [Logan Linn](https://github.com/loganlinn)

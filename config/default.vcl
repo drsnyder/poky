@@ -10,7 +10,7 @@ backend poky {
 
 sub vcl_recv {
     set req.backend = poky;
-    set req.grace = 2m;
+    set req.grace = 5m;
 
     # on PUT, POST, or DELETE, we want to invalidate the given object
     if (req.request == "POST" || req.request == "PUT" || req.request == "DELETE") {
@@ -19,5 +19,18 @@ sub vcl_recv {
 }
 
 sub vcl_fetch {
-      set beresp.grace = 2m;
+    set beresp.grace = 5m;
+    if (beresp.status == 200) {
+        set beresp.ttl = 1h;
+    }
+
+}
+
+sub vcl_deliver {
+    set resp.http.X-Served-By = server.identity;
+    if (obj.hits > 0) {
+        set resp.http.X-Cache = "HIT";
+    } else {
+        set resp.http.X-Cache = "MISS";
+    }
 }

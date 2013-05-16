@@ -1,9 +1,9 @@
 #!/bin/bash
 PATH=$PATH:/sbin:/usr/local/sbin:/usr/local/bin
-WORKING_DIR=$(dirname $0)
+WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 
-. $WORKING_DIR/../config/varnish.defaults
-. $WORKING_DIR/../config/util
+. $WORKING_DIR/config/varnish.defaults
+. $WORKING_DIR/config/util
 
 
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
