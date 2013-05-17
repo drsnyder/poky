@@ -24,6 +24,14 @@ sub vcl_fetch {
         set beresp.ttl = 1h;
     }
 
+    if (beresp.status == 404) {
+        set beresp.ttl = 0s;
+    }
+
+    if (beresp.status >= 500) {
+        set beresp.ttl = 0s;
+    }
+
 }
 
 sub vcl_deliver {
