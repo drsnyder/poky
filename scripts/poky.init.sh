@@ -8,8 +8,9 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
 function start() {
+    setup $WORKING_DIR
     echo -n "Starting poky: "
-    read PID < "$POKY_PID" > /dev/null
+    [ -e $POKY_PID ] && read PID < "$POKY_PID" > /dev/null
     kill -0 $PID 2> /dev/null
     alive=$?
     if [ $alive -eq 0 ]; then
