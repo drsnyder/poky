@@ -19,6 +19,6 @@
             :distribution :repo
             :comments "same as Clojure"}
   :repl-options {:init-ns poky.repl-helper}
-  :main poky.protocol.http.jdbc.text.main
+  :main poky.protocol.http.main
   :uberjar-name "poky-standalone.jar"
   :jvm-opts ["-server"])

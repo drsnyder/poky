@@ -2,7 +2,7 @@
   (:require (poky.kv [memory :as kv.memory]
                      [jdbc :as kv.jdbc]
                      [core :refer :all])
-            [poky.protocol.http.jdbc.text :as http]
+            [poky.protocol.http :as http]
             [poky.protocol.memcache.jdbc.text :as memcache]
             [poky.system :as system]
             [environ.core :refer [env]]

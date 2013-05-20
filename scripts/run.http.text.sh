@@ -14,6 +14,6 @@ trap 'echo "runner shutting down"; kill $(jobs -p); exit;' TERM
 
 java -Xmx1024m -server -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=$JMX_PORT \
     -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
-        -cp $POKY_JAR clojure.main -m poky.protocol.http.jdbc.text.main $* &
+        -cp $POKY_JAR clojure.main -m poky.protocol.http.main $* &
 
 wait

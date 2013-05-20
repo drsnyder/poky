@@ -1,4 +1,4 @@
-(ns poky.protocol.http.jdbc.text
+(ns poky.protocol.http
   (:require [poky.kv.core :as kv]
             (compojure [core :refer :all]
                        [route :as route]
