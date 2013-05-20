@@ -20,7 +20,7 @@ DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT},127.0.0.1:${VAR
              -p thread_pool_add_delay=${VARNISH_THREAD_POOL_ADD_DELAY} \
              -p listen_depth=${VARNISH_LISTEN_DEPTH} \
              -P $VARNISHD_PID \
-             -n $WORKING_DIR/run/""
+             -n $WORKING_DIR/run/"
 
 function start() {
     # Open files (usually 1024, which is way too small for varnish)
