@@ -7,6 +7,8 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
+DAEMON_OPTS="-p $POKY_PORT"
+
 function start() {
     setup $WORKING_DIR
     echo -n "Starting poky: "

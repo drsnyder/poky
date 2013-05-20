@@ -5,7 +5,7 @@
 #
 # Settings:
 # -s branch=http-head 
-# -s jmx_port=9191
+# -s jmx_port=9101
 # -s statsd_host=""
 # -s varnishd="/usr/local/sbin/varnishd"
 # -s varnish_listen_address=""
@@ -34,7 +34,7 @@ deploy_env = {}
 
 # see config/poky.defaults
 deploy_env['POKY_PORT']  = 8081
-deploy_env['JMX_PORT']   = fetch(:jmx_port, 9191)
+deploy_env['JMX_PORT']   = fetch(:jmx_port, 9101)
 deploy_env['STATSD_HOST'] = fetch(:statsd_host, "")
 
 # see config/varnish.defaults 
@@ -79,7 +79,7 @@ namespace :poky do
 
     desc "Check that the poky service is up and running."
     task :check, :roles => :app do
-        run "curl http://localhost:#{deploy_env['POKY_PORT']}/status"
+        run "curl -s http://localhost:#{deploy_env['POKY_PORT']}/status"
     end 
 
 end
@@ -99,7 +99,7 @@ namespace :varnish do
 
     desc "Check that varnish is up and running."
     task :check, :roles => :app do
-        run "curl http://#{deploy_env['VARNISH_LISTEN_ADDRESS'].empty? ? "localhost" : deploy_env['VARNISH_LISTEN_ADDRESS']}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
+        run "curl -s http://#{deploy_env['VARNISH_LISTEN_ADDRESS'] || "localhost"}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
     end 
 
     desc "Reload the varnish config."
@@ -153,9 +153,10 @@ namespace :deploy do
 
 
     task :update_symlinks do
-        run "ln -s #{shared_path}/log #{release_path}/log"
+        run "[ ! -d #{shared_path}/run ] && mkdir #{shared_path}/run"
         run "mkdir #{release_path}/tmp"
-        run "ln -s #{shared_path}/pids #{release_path}/tmp/pids"
+        run "ln -s #{shared_path}/log #{release_path}/log"
+        run "ln -s #{shared_path}/run #{release_path}/run"
     end
 
     task :pause do
