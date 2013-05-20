@@ -9,6 +9,19 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
 
+DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT},127.0.0.1:${VARNISH_LISTEN_PORT} \
+             -f ${VARNISH_VCL_CONF} \
+             -T ${VARNISH_ADMIN_LISTEN_ADDRESS}:${VARNISH_ADMIN_LISTEN_PORT} \
+             -t ${VARNISH_TTL} \
+             -w ${VARNISH_MIN_THREADS},${VARNISH_MAX_THREADS},${VARNISH_THREAD_TIMEOUT} \
+             -u $VARNISHD_USER -g $VARNISHD_GROUP \
+             -s ${VARNISH_STORAGE} \
+             -p thread_pools=${VARNISH_THREAD_POOLS} \
+             -p thread_pool_add_delay=${VARNISH_THREAD_POOL_ADD_DELAY} \
+             -p listen_depth=${VARNISH_LISTEN_DEPTH} \
+             -P $VARNISHD_PID \
+             -n $WORKING_DIR/run/""
+
 function start() {
     # Open files (usually 1024, which is way too small for varnish)
     ulimit -n ${NFILES:-8192} 2> /dev/null
