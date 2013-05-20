@@ -7,6 +7,7 @@
 # -s branch=http-head 
 # -s jmx_port=9191
 # -s statsd_host=""
+# -s varnishd="/usr/local/sbin/varnishd"
 # -s varnish_listen_address=""
 # -s varnish_listen_port=8080
 # -s varnish_storage_size="512M"
@@ -37,6 +38,7 @@ deploy_env['JMX_PORT']   = fetch(:jmx_port, 9191)
 deploy_env['STATSD_HOST'] = fetch(:statsd_host, "")
 
 # see config/varnish.defaults 
+deploy_env['VARNISHD'] = fetch(:varnishd, "/usr/local/sbin/varnishd")
 deploy_env['VARNISH_LISTEN_ADDRESS'] = fetch(:varnish_listen_address, "")
 deploy_env['VARNISH_LISTEN_PORT'] = fetch(:varnish_listen_port, 8080)
 
@@ -66,7 +68,7 @@ namespace :poky do
 
     desc "Stop the poky HTTP service."
     task :stop, :roles => :app do
-        run "#{current_release}/scripts/poky.init.sh stop" unless fetch(:poky_skip_stop, false)
+        run "#{current_release}/scripts/poky.init.sh stop" unless fetch(:poky_skip_stop, false) or fetch(:skip_stop, false)
     end
 
     desc "Start the poky HTTP service."
@@ -86,7 +88,7 @@ namespace :varnish do
 
     desc "Stop varnish."
     task :stop, :roles => :app do
-        run "#{current_release}/scripts/varnish.init.sh stop" unless fetch(:varnish_skip_stop, false)
+        run "#{current_release}/scripts/varnish.init.sh stop" unless fetch(:varnish_skip_stop, false) or fetch(:skip_stop, false)
     end
 
     desc "Start varnish."
@@ -99,6 +101,11 @@ namespace :varnish do
     task :check, :roles => :app do
         run "curl http://#{deploy_env['VARNISH_LISTEN_ADDRESS'].empty? ? "localhost" : deploy_env['VARNISH_LISTEN_ADDRESS']}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
     end 
+
+    desc "Reload the varnish config."
+    task :reload, :roles => :app do
+        run "#{current_release}/scripts/varnishreload"
+    end
 
 end
 
@@ -140,7 +147,7 @@ namespace :deploy do
 
     desc "Set the permissions on /var/www/poky. This enables deploy:setup."
     task :set_perms do
-        sudo "mkdir /var/www/poky > /dev/null 2>&1 || true"
+        sudo "mkdir -p /var/www/poky > /dev/null 2>&1 || true"
         sudo "chown #{user}:#{group} /var/www/poky"
     end
 
@@ -167,6 +174,7 @@ after  "deploy:update_symlinks", "deploy:migrate"
 after  "deploy",                 "deploy:pause"
 after  "deploy",                 "poky:check"
 after  "deploy",                 "varnish:check"
+after  "deploy",                 "varnish:reload"
 after  "deploy",                 "deploy:cleanup"
 
 before "deploy:setup",           "deploy:set_perms"

@@ -1,5 +1,5 @@
 #!/bin/bash
-PATH=$PATH:/sbin:/usr/local/sbin:/usr/local/bin
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/sbin:/usr/local/bin
 WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 
 . $WORKING_DIR/config/poky.defaults

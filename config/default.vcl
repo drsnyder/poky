@@ -6,6 +6,13 @@ backend poky {
   .connect_timeout = 1s;
   .first_byte_timeout = 5s;
   .between_bytes_timeout = 2s;
+  .probe = {
+      .url = "/status";
+      .interval = 5s;
+      .timeout = 1s;
+      .window = 5;
+      .threshold = 3;
+  }
 }
 
 sub vcl_recv {

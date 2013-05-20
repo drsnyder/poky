@@ -38,9 +38,9 @@
   (fn [req]
     (charset (handler req) char-set)))
 
-(defn api
+(defn kv-routes
   [kvstore]
-  (let [api-routes
+  (let [kv-api-routes
         (routes
           (GET ["/:b/:k" :b valid-key-regex :k valid-key-regex]
                {:keys [params headers body] {:keys [b k]} :params}
@@ -51,20 +51,32 @@
           (POST ["/:b/:k" :b valid-key-regex :k valid-key-regex]
                 {:keys [params body body-params headers] {:keys [b k]} :params}
                 (wrap-put kvstore b k params headers (put-body body body-params)))
-          (route/not-found ""))]
+          ; TODO: DELETE
+          (route/not-found "Object not found. Did you specifiy /:bucket/:key?"))]
+    kv-api-routes))
 
+
+(defroutes status-routes 
+  (GET "/" []
+       (response "ok")))
+
+(defn api
+  [kvstore]
+  (let [api-routes (routes 
+                     (context "/kv" [] (kv-routes kvstore))
+                     (context "/status" [] status-routes))]
     (-> (handler/api api-routes)
-      (format-params/wrap-format-params
-        :predicate format-params/json-request?
-        :decoder #(json/parse-string % true)
-        :charset "utf-8")
-      ; for curl default content type & possibly others
-      (format-params/wrap-format-params
-        :predicate (format-params/make-type-request-pred #"^application/x-www-form-urlencoded")
-        :decoder identity
-        :charset "utf-8")
-      (wrap-charset "utf-8")
-      trace/wrap-stacktrace)))
+        ; for curl default content type & possibly others. pass the data
+        ; through as is
+        (format-params/wrap-format-params
+          :predicate (format-params/make-type-request-pred #"^application/x-www-form-urlencoded")
+          :decoder identity
+          :charset "utf-8")
+        ; this is required to make sure we handle multi-byte content responses
+        ; properly
+        (wrap-charset "utf-8")
+        trace/wrap-stacktrace)))
+
 
 (defn start-server
   "Start the jetty http server.
