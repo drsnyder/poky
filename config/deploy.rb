@@ -47,13 +47,13 @@ deploy_env['VARNISH_STORAGE_SIZE'] = fetch(:varnish_storage_size, "512M")
 
 desc "Deploy to the poky development environment."
 task :development do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@dev.poky.huddler.com/poky")
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@dev.poky.huddler.com/poky_dev")
     role :app, "dev.poky.huddler.com"
 end
 
 desc "Deploy to the poky qa environment."
 task :qa do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@qa.poky.huddler.com/poky")
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@qa.poky.huddler.com/poky_qa")
     role :app, "qa.poky.huddler.com"
 end
 
