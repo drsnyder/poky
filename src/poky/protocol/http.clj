@@ -26,6 +26,14 @@
   (kv/set* kvstore b k body)
   (response "")) ; empty 200
 
+(defn- wrap-delete
+  [kvstore b k params headers]
+  (if (kv/delete* kvstore b k)
+    (response "")    ; empty 200
+    (not-found ""))) ; empty 404
+
+
+
 (defn- put-body
   "Returns body if non-empty otherwise body-params"
   [body body-params]
@@ -51,7 +59,9 @@
           (POST ["/:b/:k" :b valid-key-regex :k valid-key-regex]
                 {:keys [params body body-params headers] {:keys [b k]} :params}
                 (wrap-put kvstore b k params headers (put-body body body-params)))
-          ; TODO: DELETE
+          (DELETE ["/:b/:k" :b valid-key-regex :k valid-key-regex]
+                {:keys [params body body-params headers] {:keys [b k]} :params}
+                (wrap-delete kvstore b k params headers))
           (route/not-found "Object not found. Did you specifiy /:bucket/:key?"))]
     kv-api-routes))
 
