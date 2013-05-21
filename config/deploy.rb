@@ -99,7 +99,9 @@ namespace :varnish do
 
     desc "Check that varnish is up and running."
     task :check, :roles => :app do
-        listen = deploy_env['VARNISH_LISTEN_ADDRESS'].nil? ? "localhost" : deploy_env['VARNISH_LISTEN_ADDRESS']
+        # if VARNISH_LISTEN_ADDRESS is empty, use localhost. in this case, any
+        # interface will do
+        listen = deploy_env['VARNISH_LISTEN_ADDRESS'].empty? ? "localhost" : deploy_env['VARNISH_LISTEN_ADDRESS']
         run "curl -s http://#{listen}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
     end 
 
