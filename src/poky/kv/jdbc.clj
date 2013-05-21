@@ -2,7 +2,8 @@
   (:require [poky.kv.core :refer :all]
             [poky.kv.jdbc.util :refer [create-db-spec pool]]
             [clojure.java.jdbc :as sql]
-            [clojure.string :as string] ))
+            [clojure.string :as string]))
+
 
 (defn jdbc-get
   [conn b k]
@@ -41,7 +42,7 @@
     (get* this b k))
   (get* [this b k]
     (when-let [row (jdbc-get conn b k)]
-      {(:key row) (:data row)}))
+      {(:key row) (:data row) :modified_at (:modified_at row)}))
   (mget* [this b ks params]
     (mget* this b ks))
   (mget* [this b ks]

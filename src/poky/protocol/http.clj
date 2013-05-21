@@ -1,10 +1,11 @@
 (ns poky.protocol.http
   (:require [poky.kv.core :as kv]
+            [poky.util :as util]
             (compojure [core :refer :all]
                        [route :as route]
                        [handler :as handler])
             [ring.adapter.jetty :as jetty]
-            [ring.util.response :refer [response not-found charset]]
+            [ring.util.response :refer [response not-found charset header]]
             (ring.middleware [format-response :as format-response ]
                              [format-params :as format-params])
             [cheshire.core :as json]
@@ -33,9 +34,12 @@ Status codes to expect:
 
 (defn- wrap-get
   [kvstore b k params headers body]
-  (if-let [v (get (kv/get* kvstore b k) k)]
-    (response v)
-    (not-found "")))
+  (let [t (kv/get* kvstore b k)
+        modified (get t :modified_at nil)]
+    (if t
+      (cond-> (response (get t k))
+              modified (header "Last-Modified" (util/http-date modified)))
+      (not-found ""))))
 
 (defn- wrap-put
   [kvstore b k params headers body]
