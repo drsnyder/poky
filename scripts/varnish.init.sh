@@ -9,7 +9,7 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
 
-DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT},127.0.0.1:${VARNISH_LISTEN_PORT} \
+DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
              -f ${VARNISH_VCL_CONF} \
              -T ${VARNISH_ADMIN_LISTEN_ADDRESS}:${VARNISH_ADMIN_LISTEN_PORT} \
              -t ${VARNISH_TTL} \

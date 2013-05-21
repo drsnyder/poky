@@ -33,7 +33,7 @@ set :use_sudo, false
 deploy_env = {}
 
 # see config/poky.defaults
-deploy_env['POKY_PORT']  = 8081
+deploy_env['POKY_PORT']  = fetch(:poky_port, 8081); # if you change here, change in default.vcl
 deploy_env['JMX_PORT']   = fetch(:jmx_port, 9101)
 deploy_env['STATSD_HOST'] = fetch(:statsd_host, "")
 
@@ -99,7 +99,8 @@ namespace :varnish do
 
     desc "Check that varnish is up and running."
     task :check, :roles => :app do
-        run "curl -s http://#{deploy_env['VARNISH_LISTEN_ADDRESS'] || "localhost"}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
+        listen = deploy_env['VARNISH_LISTEN_ADDRESS'].nil? ? "localhost" : deploy_env['VARNISH_LISTEN_ADDRESS']
+        run "curl -s http://#{listen}:#{deploy_env['VARNISH_LISTEN_PORT']}/status"
     end 
 
     desc "Reload the varnish config."
@@ -153,7 +154,7 @@ namespace :deploy do
 
 
     task :update_symlinks do
-        run "[ ! -d #{shared_path}/run ] && mkdir #{shared_path}/run"
+        run "[ ! -d #{shared_path}/run ] && mkdir #{shared_path}/run || true"
         run "mkdir #{release_path}/tmp"
         run "ln -s #{shared_path}/log #{release_path}/log"
         run "ln -s #{shared_path}/run #{release_path}/run"
