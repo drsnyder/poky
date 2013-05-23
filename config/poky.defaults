@@ -1,0 +1,9 @@
+# Poky default config.
+
+POKY_PORT=8081
+
+POKY=$WORKING_DIR/scripts/run.http.text.sh
+POKY_ERR_LOG=$WORKING_DIR/log/poky.err.log
+POKY_OUT_LOG=$WORKING_DIR/log/poky.out.log
+
+POKY_PID=$WORKING_DIR/run/poky.pid

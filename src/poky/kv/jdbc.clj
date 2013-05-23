@@ -2,7 +2,8 @@
   (:require [poky.kv.core :refer :all]
             [poky.kv.jdbc.util :refer [create-db-spec pool]]
             [clojure.java.jdbc :as sql]
-            [clojure.string :as string] ))
+            [clojure.string :as string]))
+
 
 (defn jdbc-get
   [conn b k]
@@ -41,7 +42,7 @@
     (get* this b k))
   (get* [this b k]
     (when-let [row (jdbc-get conn b k)]
-      {(:key row) (:data row)}))
+      {(:key row) (:data row) :modified_at (:modified_at row)}))
   (mget* [this b ks params]
     (mget* this b ks))
   (mget* [this b ks]
@@ -49,7 +50,12 @@
   (set* [this b k value]
     (jdbc-set conn b k value))
   (delete* [this b k]
-    (jdbc-delete conn b k)))
+    ; on delete, the return value should be '(1) if the tuple exists and
+    ; '(0) otherwise. given the schema, there should only every be 1 value
+    ; matching b and k. return true or false if the single tuple was deleted.
+    (when-let [ret (jdbc-delete conn b k)]
+      (when (seq? ret)
+        (= (first ret) 1)))))
 
 (defn create
   [dsn]

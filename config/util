@@ -1,0 +1,10 @@
+
+function setup() {
+    if [ ! -d $1/run ]; then
+        mkdir $1/run
+    fi
+
+    if [ ! -d $1/log ]; then
+        mkdir $1/log
+    fi
+}

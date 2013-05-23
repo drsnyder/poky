@@ -4,5 +4,5 @@ CREATE TABLE poky (
     data text,
     created_at timestamptz DEFAULT NOW(),
     modified_at timestamptz DEFAULT NOW(),
-    PRIMARY KEY (bucket, key)
-);
+    PRIMARY KEY (bucket, key) /* USING INDEX TABLESPACE poky */
+) /* TABLESPACE poky */;

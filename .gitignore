@@ -9,3 +9,7 @@
 /.lein-repl-history
 target
 test-clients
+run
+log
+config/environment
+tmp
