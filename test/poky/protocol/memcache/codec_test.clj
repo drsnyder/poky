@@ -1,5 +1,5 @@
-(ns poky.test.protocol.memcache
-  (:use [poky.protocol.memcache]
+(ns poky.protocol.memcache.codec-test
+  (:use [poky.protocol.memcache.codec]
         [gloss core io]
         [clojure.test]
         [midje.sweet]))

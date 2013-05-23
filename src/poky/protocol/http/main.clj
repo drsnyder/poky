@@ -1,7 +1,7 @@
-(ns poky.protocol.http.jdbc.text.main
+(ns poky.protocol.http.main
   (:gen-class)
   (:require [poky.kv.jdbc :as jdbc]
-            [poky.protocol.http.jdbc.text :as http]
+            [poky.protocol.http :as http]
             [poky.system :as system]))
 
 (defn -main [& args]
