@@ -1,6 +1,6 @@
 (ns poky.repl-helper
-  (:require (poky.kv [memory :as kv.memory]
-                     [jdbc :as kv.jdbc]
+  (:use [clojure.repl :only (doc source)])
+  (:require (poky.kv [jdbc :as kv.jdbc]
                      [core :refer :all])
             [poky.protocol.http :as http]
             [poky.protocol.memcache.codec :as memcache-codec]
