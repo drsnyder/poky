@@ -28,7 +28,8 @@ Create a poky database and create the table:
 
     postgres=# CREATE DATABASE poky;
     postgres=# \c poky
-    poky=# \i table.sql
+    poky=# \i sql/table.sql
+    poky=# \i sql/triggers.sql
 
 To start a new instance of Poky:
 
