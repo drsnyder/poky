@@ -6,6 +6,7 @@
             [poky.protocol.memcache.codec :as memcache-codec]
             [poky.protocol.memcache :as memcache]
             [poky.system :as system]
+            [poky.util :as util]
             [environ.core :refer [env]]
             [cheshire.core :as json]
             [midje.repl :refer :all]

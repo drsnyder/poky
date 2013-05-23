@@ -4,14 +4,28 @@
            java.util.Locale))
 
 (defn cmd-to-keyword [cmd]
+  "Convert a command (.e.g. SET) to a keyword (e.g. :set)."
   (if (keyword? cmd)
     cmd
     (keyword (clojure.string/lower-case cmd))))
 
-<<<<<<< HEAD
-(defn- random-char-set
+(def ascii-table-base 65)
+(def ascii-table-range 58)
+
+(defn random-ascii-block
+  "Generate a random set of characters from an ASCII block. If base and table-range
+  are omitted a set of characters that is safe for printing is used."
+  ([base table-range]
+   (shuffle (map (comp char (partial + base)) (range 0 table-range))))
   ([]
-   (shuffle (map (comp char (partial + 65)) (range 0 58))))
+   (random-ascii-block ascii-table-base ascii-table-range)))
+
+
+(defn random-char-set
+  "Generate a random seq of printable ASCII characters. If n is supplied, return a list
+  of n characters. If n exceeds ~58 there will be repititions."
+  ([]
+   (cons (nth (random-ascii-block) (rand-int ascii-table-range)) (lazy-seq (random-char-set))))
   ([n]
    (take n (random-char-set))))
 
@@ -21,7 +35,6 @@
   ([n]
    (clojure.string/join "" (random-char-set n))))
 
-=======
 ; inspiration came from
 ; https://github.com/ordnungswidrig/compojure-rest/blob/master/src/compojure_rest/util.clj
 (defn http-date-format
@@ -37,4 +50,3 @@
   (->> date
        (.format (http-date-format))
        (format "%s GMT")))
->>>>>>> http-head
