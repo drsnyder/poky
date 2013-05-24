@@ -11,6 +11,7 @@
 (def bucket (str (.name *ns*)))
 (def S (atom nil))
 
+
 (facts :compare-seq-first
        (kv.jdbc/compare-seq-first '(0) 1) => falsey
        (kv.jdbc/compare-seq-first '(1) 1) => truthy
@@ -24,6 +25,7 @@
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)
          (kv.jdbc/jdbc-get ..store.. ..bucket.. ..key..) => {:key "some-key" :data "some-value" :modified_at "modified"})
+
        (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => nil
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)
@@ -35,6 +37,7 @@
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)
          (kv.jdbc/jdbc-set ..store.. ..bucket.. ..key.. ..value..) => '(1))
+
        (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :rejected
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)
@@ -45,6 +48,7 @@
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)
          (kv.jdbc/jdbc-delete ..store.. ..bucket.. ..key..) => '(1))
+
        (kv/delete* (kv.jdbc/create ..store..) ..bucket.. ..key..) => false
        (provided
          (kv.jdbc/create-connection ..store..) => (delay ..store..)

@@ -5,7 +5,7 @@
                        [route :as route]
                        [handler :as handler])
             [ring.adapter.jetty :as jetty]
-            [ring.util.response :refer [response not-found charset header]]
+            [ring.util.response :refer [response status not-found charset header]]
             (ring.middleware [format-response :as format-response ]
                              [format-params :as format-params])
             [cheshire.core :as json]
@@ -43,15 +43,17 @@ Status codes to expect:
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (kv/set* kvstore b k body)
-  (response "")) ; empty 200
+  (condp = (kv/set* kvstore b k body)
+    :updated (response "")
+    :inserted (response "")
+    :rejected (-> (response "") (status 412))
+    (response "Error, PUT/POST could not be completed." 500)))
 
 (defn- wrap-delete
   [kvstore b k params headers]
   (if (kv/delete* kvstore b k)
     (response "")    ; empty 200
     (not-found ""))) ; empty 404
-
 
 
 (defn- put-body

@@ -7,6 +7,7 @@
            [poky.kv.core.Connection]))
 
 
+; FIXME: move these heper functions to kv.jdbc.util
 (defn purge-bucket
   "Should only be used in testing."
   [conn b]
