@@ -2,6 +2,7 @@
   (:use [clojure.repl :only (doc source)])
   (:require (poky.kv [jdbc :as kv.jdbc]
                      [core :refer :all])
+            [poky.kv.jdbc.util :as jdbc-util]
             [poky.protocol.http :as http]
             [poky.system :as system]
             [poky.util :as util]

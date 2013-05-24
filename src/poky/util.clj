@@ -3,11 +3,6 @@
            java.util.TimeZone
            java.util.Locale))
 
-(defn cmd-to-keyword [cmd]
-  "Convert a command (.e.g. SET) to a keyword (e.g. :set)."
-  (if (keyword? cmd)
-    cmd
-    (keyword (clojure.string/lower-case cmd))))
 
 (def ascii-table-base 65)
 (def ascii-table-range 58)
