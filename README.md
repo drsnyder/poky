@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/drsnyder/poky.png)](https://travis-ci.org/drsnyder/poky)
+
+
 # Poky
 
 Poky is a work in progress. 
