@@ -10,8 +10,15 @@
   (mget* [this b ks] [this b ks params]
         "Deprecated.")
   (set* [this b k value] [this b k value params]
-        "Set the object at the specified bucket and key with value. Returns true
-        if the object was saved, false otherwise.")
+        "Set the object at the specified bucket and key with value. Returns:
+        :created
+        :updated
+        :rejected
+        if the object was created or altered, false otherwise.")
   (delete* [this b k]
         "Delete the object at the specified bucket and key. Returns true if the object
         was deleted and false otherwise."))
+
+(defprotocol Connection
+  (connection [this] "Get the connection.")
+  (close [this] "Close the connection"))

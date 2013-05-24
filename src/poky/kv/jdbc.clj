@@ -3,7 +3,8 @@
             [poky.kv.jdbc.util :refer [create-db-spec pool]]
             [clojure.java.jdbc :as sql]
             [clojure.string :as string])
-  (:import [poky.kv.core.KeyValue]))
+  (:import [poky.kv.core.KeyValue]
+           [poky.kv.core.Connection]))
 
 
 (defn purge-bucket
@@ -59,9 +60,11 @@
     (sql/delete-rows "poky"
        ["bucket=? AND key=?" b k])))
 
+(declare get-connection close-connection)
 
 (defrecord JdbcKeyValue [conn]
   KeyValue
+  Connection
   (get* [this b k params]
     (get* this b k))
   (get* [this b k]
@@ -72,18 +75,35 @@
   (mget* [this b ks]
     (into {} (map (juxt :key :data) (jdbc-mget @conn b ks))))
   (set* [this b k value]
-    ; FIXME: if this is an insert it returns a map if it's an update, it
-    ; returns a seq
     (when-let [ret (jdbc-set @conn b k value)]
-      (compare-seq-first ret 1)))
+      (cond
+        (and (seq? ret) (compare-seq-first ret 1)) :updated
+        (and (seq? ret) (compare-seq-first ret 0)) :rejected
+        (map? ret) :inserted
+        :else false)))
   (set* [this b k value params]
     (set* this b k value))
   (delete* [this b k]
-    (compare-seq-first (jdbc-delete @conn b k) 1)))
+    (compare-seq-first (jdbc-delete @conn b k) 1))
+
+  (connection [this]
+    (get-connection this))
+  (close [this]
+    (close-connection this)))
 
 (defn create-connection
   [dsn]
   (delay (pool (create-db-spec dsn))))
+
+(defn close-connection
+  "Close the connection of a JdbcKeyValue object."
+  [jdbc-keyvalue-object]
+  (.close (:datasource @(:conn jdbc-keyvalue-object))))
+
+(defn get-connection
+  "Get the connection from a JdbcKeyValue object."
+  [jdbc-keyvalue-object]
+  @(:conn jdbc-keyvalue-object))
 
 (defn create
   [dsn]
