@@ -5,6 +5,14 @@
             [clojure.string :as string])
   (:import [poky.kv.core.KeyValue]))
 
+
+(defn purge-bucket
+  "Should only be used in testing."
+  [conn b]
+  (sql/with-connection conn
+    (sql/delete-rows "poky"
+       ["bucket=?" b])))
+
 (defn compare-seq-first
   "Compare the first value in s to v using =. Complements set and delete.
   The clojure.java.jdbc methods they use return a tuple where the first element is the
@@ -64,7 +72,10 @@
   (mget* [this b ks]
     (into {} (map (juxt :key :data) (jdbc-mget @conn b ks))))
   (set* [this b k value]
-    (compare-seq-first (jdbc-set @conn b k value) 1))
+    ; FIXME: if this is an insert it returns a map if it's an update, it
+    ; returns a seq
+    (when-let [ret (jdbc-set @conn b k value)]
+      (compare-seq-first ret 1)))
   (set* [this b k value params]
     (set* this b k value))
   (delete* [this b k]
