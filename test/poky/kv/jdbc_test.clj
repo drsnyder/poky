@@ -63,6 +63,41 @@
                                         (clear-testing-bucket @S bucket)
                                         ?form
                                         (kv/close @S)))]
-    (facts :integration
-           (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => (contains {:key "key" :data "value"})
-           (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => '(1)))
+  (facts :integration :jdbc-set
+         (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => (contains {:key "key" :data "value"})
+         (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => '(1))
+
+  (facts :integration :jdbc-get
+         (kv.jdbc/jdbc-get (kv/connection @S) bucket "key") => falsey
+         (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => (contains {:key "key" :data "value"})
+         (kv.jdbc/jdbc-get (kv/connection @S) bucket "key") => (contains {:key "key" :data "value"}))
+
+  (facts :integration :jdbc-delete
+         (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => (contains {:key "key" :data "value"})
+         (kv.jdbc/jdbc-delete (kv/connection @S) bucket "key") => '(1)
+         (kv.jdbc/jdbc-delete (kv/connection @S) bucket "key") => '(0)))
+
+
+
+(with-state-changes [(around :facts (do (reset! S (kv.jdbc/create (env :database-url)))
+                                        ; alternatively, use sql/transaction
+                                        ; and rollback. that's possible, but
+                                        ; would require some refactoring of
+                                        ; kv.jdbc to support in nested within
+                                        ; sql/connection.
+                                        (clear-testing-bucket @S bucket)
+                                        ?form
+                                        (kv/close @S)))]
+  (facts :integration :set
+         (kv/set* @S bucket "key" "value") => :inserted
+         (kv/set* @S bucket "key" "value") => :updated)
+
+  (facts :integration :get
+         (kv/get* @S bucket "key") => falsey
+         (kv/set* @S bucket "key" "value") => :inserted
+         (kv/get* @S bucket "key") => (contains {"key" "value"}))
+
+  (facts :integration :delete
+         (kv/set* @S bucket "key" "value") => :inserted
+         (kv/delete* @S bucket "key") => truthy
+         (kv/delete* @S bucket "key") => falsey))
