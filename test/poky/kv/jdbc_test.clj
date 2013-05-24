@@ -54,18 +54,15 @@
   (kv.jdbc/purge-bucket (kv/connection state) bucket))
 
 
-; this is a little less than ideal, but it works. to use with-state-changes,
-; you have to nest the facts like so as opposed to the wrapping convention
-; above. i believe it is the let that is causing the issue but I haven't tested
-; it
-(with-state-changes [(before :facts (do (reset! S (kv.jdbc/create (env :database-url)))
-                                 (clear-testing-bucket @S bucket)))
-                     (after :facts (do (kv/close @S)))]
-  (let [k (util/random-string 10)
-        v (util/random-string 10)]
-    (fact :integration
-          (kv.jdbc/jdbc-set (kv/connection @S) bucket k v) => (contains {:key k :data v}))
-    (fact :integration
-          (do
-            (kv.jdbc/jdbc-set (kv/connection @S) bucket k v)
-            (kv.jdbc/jdbc-set (kv/connection @S) bucket k v)) => '(1))))
+(with-state-changes [(around :facts (do (reset! S (kv.jdbc/create (env :database-url)))
+                                        ; alternatively, use sql/transaction
+                                        ; and rollback. that's possible, but
+                                        ; would require some refactoring of
+                                        ; kv.jdbc to support in nested within
+                                        ; sql/connection.
+                                        (clear-testing-bucket @S bucket)
+                                        ?form
+                                        (kv/close @S)))]
+    (facts :integration
+           (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => (contains {:key "key" :data "value"})
+           (kv.jdbc/jdbc-set (kv/connection @S) bucket "key" "value") => '(1)))
