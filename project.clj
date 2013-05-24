@@ -5,6 +5,8 @@
                  [postgresql/postgresql "9.0-801.jdbc4"]
                  [org.clojure/java.jdbc "0.2.3"]
                  [c3p0/c3p0 "0.9.1.2"]
+                 [clj-logging-config "1.9.10"]
+                 [org.clojure/tools.logging "0.2.6"]
                  [ring/ring-core "1.1.7"]
                  [ring/ring-jetty-adapter "1.1.0"]
                  [ring-middleware-format "0.2.3"]
