@@ -8,6 +8,7 @@
             [midje.sweet :refer :all])
   (:import [poky.kv.core.KeyValue]
            [poky.kv.core.Connection]))
+
 (def bucket (str (.name *ns*)))
 (def S (atom nil))
 

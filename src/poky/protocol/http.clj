@@ -27,6 +27,7 @@ Other:
 Status codes to expect:
   - 200 on success
   - 404 when the object is not found
+  - 412 when an update is rejected
   - 500 on server error
 ")
 
