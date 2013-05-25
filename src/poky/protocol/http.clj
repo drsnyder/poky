@@ -1,6 +1,7 @@
 (ns poky.protocol.http
   (:require [poky.kv.core :as kv]
             [poky.util :as util]
+            [clojure.tools.logging :refer [infof]]
             (compojure [core :refer :all]
                        [route :as route]
                        [handler :as handler])
@@ -123,6 +124,7 @@ Status codes to expect:
   MAX_THREADS
   "
   [kvstore port]
+  (infof "Starting poky on port %d" port)
   (jetty/run-jetty (api kvstore)
                    {:port port
                     :max-threads (env :max-threads default-jetty-max-threads)

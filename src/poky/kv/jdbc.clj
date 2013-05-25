@@ -1,6 +1,7 @@
 (ns poky.kv.jdbc
   (:require [poky.kv.core :refer :all]
             [poky.kv.jdbc.util :refer :all]
+            [clojure.tools.logging :refer [warnf]]
             [clojure.java.jdbc :as sql]
             [clojure.string :as string])
   (:import [poky.kv.core.KeyValue]
