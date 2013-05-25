@@ -44,12 +44,12 @@ option.
 
 For putting data in, both POST and PUT are accepted.
 
-    $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/bucket/key
-    $ curl -d"\"json value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8081/bucket/key
-    $ curl -d"value" -H'Content-Type: text/plain' -v -X PUT http://localhost:8081/bucket/key
+    $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/kv/bucket/key
+    $ curl -d"\"json value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8081/kv/bucket/key
+    $ curl -d"value" -H'Content-Type: text/plain' -v -X PUT http://localhost:8081/kv/bucket/key
 
 
-    $ curl -d"value" -v -X POST http://localhost:8081/bucket/key
+    $ curl -d"value" -v -X POST http://localhost:8081/kv/bucket/key
 
 When putting data in, you should expect a status code of 200 if the request was
 completed successfully.
@@ -57,10 +57,12 @@ completed successfully.
 
 When getting data out, use GET:
 
-    $ curl -X GET http://localhost:8081/bucket/key
+    $ curl -X GET http://localhost:8081/kv/bucket/key
     value
 
-Expect a status code of 200 and the data as the body.
+For additional documentation:
+
+    $ curl -X GET http://localhost:8081/help
 
 ## Dependencies
 
