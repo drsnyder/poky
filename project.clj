@@ -11,6 +11,7 @@
                  [ring/ring-jetty-adapter "1.1.0"]
                  [ring-middleware-format "0.2.3"]
                  [compojure "1.1.3"]
+                 [clj-http "0.7.2"]
                  [clj-stacktrace "0.2.5"]
                  [environ "0.2.1"]]
   :profiles {:dev {:dependencies [[midje "1.5.1"]]

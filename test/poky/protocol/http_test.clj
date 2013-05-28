@@ -1,14 +1,24 @@
 (ns poky.protocol.http-test
   (:require [poky.protocol.http :as http]
             [poky.kv.core :as kv]
+            [poky.kv.jdbc :as kv.jdbc]
+            [poky.kv.jdbc.util :refer :all]
             [poky.util :as util]
+            [poky.system :as system]
             [environ.core :refer [env]]
+            [clj-http.client :as client]
             [midje.util :refer [expose-testables]]
             [midje.sweet :refer :all])
   (:import [java.util.DateFormat]))
 
 ; not working
 ;(expose-testables poky.protocol.http)
+
+
+
+(def bucket (str (.name *ns*)))
+(def S (atom nil))
+(def default-port 9999)
 
 (facts :get
        (#'http/wrap-get ..store.. ..bucket.. "some-key" 
@@ -63,3 +73,52 @@
                                                               :status 404})
        (provided
          (kv/delete* ..store.. ..bucket.. ..key..) => false))
+
+(defn create-system
+ [] 
+  (when-let [dsn (env :database-url)] (system/create-system (kv.jdbc/create dsn) #'http/start-server)))
+
+(defn end-point-url
+  [port b k]
+  (format "http://localhost:%d/kv/%s/%s", port, bucket, k))
+
+(with-state-changes [(around :facts (do (reset! S (create-system))
+                                        (purge-bucket (kv/connection (system/store @S)) bucket)
+                                        (system/start @S default-port)
+                                        ?form
+                                        (system/stop @S)
+                                        (kv/close (system/store @S))))]
+
+  (facts :integration :put
+         (client/put (end-point-url default-port bucket "set-me")
+                      {:body "with-a-value"}) => (contains {:status 200})
+         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200 
+                                                                                 :body "with-a-value"}))
+
+  (facts :integration :put :multi-byte
+         (client/put (end-point-url default-port bucket "put-multi-byte")
+                      {:body "讓我們吃的點心"}) => (contains {:status 200})
+         (client/get (end-point-url default-port bucket "put-multi-byte")) => (contains {:status 200 
+                                                                                     :body "讓我們吃的點心"}))
+  (facts :integration :post
+         (client/post (end-point-url default-port bucket "set-me")
+                      {:body "with-a-value"}) => (contains {:status 200})
+         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200 
+                                                                                 :body "with-a-value"}))
+
+  (facts :integration :post :multi-byte
+         (client/post (end-point-url default-port bucket "post-multi-byte")
+                      {:body "你想去哪兒吃"}) => (contains {:status 200})
+         (client/get (end-point-url default-port bucket "post-multi-byte")) => (contains {:status 200 
+                                                                                     :body "你想去哪兒吃"}))
+
+
+  (facts :integration :delete
+         (client/delete (end-point-url default-port bucket "delete-me") 
+                        {:throw-exceptions false}) => (contains {:status 404})
+         (client/post (end-point-url default-port bucket "delete-me")
+                      {:body "with-a-value"}) => (contains {:status 200})
+         (client/delete (end-point-url default-port bucket "delete-me") 
+                        {:throw-exceptions false}) => (contains {:status 200})
+         (client/delete (end-point-url default-port bucket "delete-me") 
+                        {:throw-exceptions false}) => (contains {:status 404})))

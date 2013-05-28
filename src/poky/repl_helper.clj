@@ -8,6 +8,7 @@
             [poky.util :as util]
             [environ.core :refer [env]]
             [cheshire.core :as json]
+            [clj-http.client :as client]
             [midje.repl :refer :all]
             [clojure.java.jdbc :as sql])
   (:import java.nio.ByteBuffer))
