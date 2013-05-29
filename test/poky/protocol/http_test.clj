@@ -56,7 +56,14 @@
                                                                        :headers map?
                                                                        :status 412})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :rejected))
+         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :rejected)
+
+       (#'http/wrap-put ..store.. ..bucket.. ..key..
+                        ..params.. ..headers.. ..body..) => (contains {:body "Error, PUT/POST could not be completed."
+                                                                       :headers map?
+                                                                       :status 500})
+       (provided
+         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => false))
 
 
 (facts :delete

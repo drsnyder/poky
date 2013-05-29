@@ -49,7 +49,7 @@ Status codes to expect:
     :updated (response "")
     :inserted (response "")
     :rejected (-> (response "") (status 412))
-    (response "Error, PUT/POST could not be completed." 500)))
+    (-> (response "Error, PUT/POST could not be completed.") (status 500))))
 
 (defn- wrap-delete
   [kvstore b k params headers]
