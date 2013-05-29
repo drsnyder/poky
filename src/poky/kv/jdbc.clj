@@ -11,7 +11,6 @@
 
 (defrecord JdbcKeyValue [conn]
   KeyValue
-  Connection
   (get* [this b k params]
     (get* this b k))
   (get* [this b k]
@@ -33,6 +32,7 @@
   (delete* [this b k]
     (compare-seq-first (jdbc-delete @conn b k) 1))
 
+  Connection
   (connection [this]
     (get-connection this))
   (close [this]
