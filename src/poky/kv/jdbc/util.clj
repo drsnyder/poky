@@ -95,12 +95,3 @@
   (sql/with-connection conn
     (sql/delete-rows "poky"
        ["bucket=? AND key=?" b k])))
-
-
-(defn first=
-  "Compare the first value in s to v using =. Complements set and delete.
-  The clojure.java.jdbc methods they use return a tuple where the first element is the
-  number of records updated. This helper can be used to test that element for the number
-  expected."
-  [coll v]
-  (when-first [a coll] (= a v)))

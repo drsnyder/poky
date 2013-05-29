@@ -1,19 +1,12 @@
 (ns poky.kv.jdbc.util-test
   (:require [poky.kv.jdbc.util :refer :all]
             [poky.kv.core :as kv]
-            [poky.util :as util]
             [environ.core :refer [env]]
             [clojure.java.jdbc :as sql]
             [midje.sweet :refer :all]))
 
 (def bucket (str (.name *ns*)))
 (def S (atom nil))
-
-(facts :compare-seq-first
-       (first= '(0) 1) => falsey
-       (first= '(1) 1) => truthy
-       (first= nil 1) => falsey)
-
 
 (with-state-changes [(around :facts (do (reset! S (create-connection (env :database-url)))
                                         ; alternatively, use sql/transaction

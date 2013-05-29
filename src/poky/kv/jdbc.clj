@@ -1,5 +1,6 @@
 (ns poky.kv.jdbc
-  (:require [poky.kv.core :refer :all]
+  (:require [poky.util :as util]
+            [poky.kv.core :refer :all]
             [poky.kv.jdbc.util :refer :all]
             [clojure.tools.logging :refer [warnf]]
             [clojure.java.jdbc :as sql]
@@ -23,14 +24,14 @@
   (set* [this b k value]
     (when-let [ret (jdbc-set @conn b k value)]
       (cond
-        (and (seq? ret) (first= ret 1)) :updated
-        (and (seq? ret) (first= ret 0)) :rejected
+        (and (seq? ret) (util/first= ret 1)) :updated
+        (and (seq? ret) (util/first= ret 0)) :rejected
         (map? ret) :inserted
         :else false)))
   (set* [this b k value params]
     (set* this b k value))
   (delete* [this b k]
-    (first= (jdbc-delete @conn b k) 1))
+    (util/first= (jdbc-delete @conn b k) 1))
 
   Connection
   (connection [this]
