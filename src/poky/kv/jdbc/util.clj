@@ -97,11 +97,10 @@
        ["bucket=? AND key=?" b k])))
 
 
-(defn compare-seq-first
+(defn first=
   "Compare the first value in s to v using =. Complements set and delete.
   The clojure.java.jdbc methods they use return a tuple where the first element is the
   number of records updated. This helper can be used to test that element for the number
   expected."
-  [s v]
-  (when (seq? s)
-    (= (first s) v)))
+  [coll v]
+  (when-first [a coll] (= a v)))

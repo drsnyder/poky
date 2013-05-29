@@ -10,9 +10,9 @@
 (def S (atom nil))
 
 (facts :compare-seq-first
-       (compare-seq-first '(0) 1) => falsey
-       (compare-seq-first '(1) 1) => truthy
-       (compare-seq-first nil 1) => falsey)
+       (first= '(0) 1) => falsey
+       (first= '(1) 1) => truthy
+       (first= nil 1) => falsey)
 
 
 (with-state-changes [(around :facts (do (reset! S (create-connection (env :database-url)))

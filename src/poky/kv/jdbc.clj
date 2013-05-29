@@ -23,14 +23,14 @@
   (set* [this b k value]
     (when-let [ret (jdbc-set @conn b k value)]
       (cond
-        (and (seq? ret) (compare-seq-first ret 1)) :updated
-        (and (seq? ret) (compare-seq-first ret 0)) :rejected
+        (and (seq? ret) (first= ret 1)) :updated
+        (and (seq? ret) (first= ret 0)) :rejected
         (map? ret) :inserted
         :else false)))
   (set* [this b k value params]
     (set* this b k value))
   (delete* [this b k]
-    (compare-seq-first (jdbc-delete @conn b k) 1))
+    (first= (jdbc-delete @conn b k) 1))
 
   Connection
   (connection [this]
