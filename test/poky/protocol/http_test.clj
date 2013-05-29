@@ -75,7 +75,7 @@
          (kv/delete* ..store.. ..bucket.. ..key..) => false))
 
 (defn create-system
- [] 
+ []
   (when-let [dsn (env :database-url)] (system/create-system (kv.jdbc/create dsn) #'http/start-server)))
 
 (defn end-point-url
@@ -92,33 +92,33 @@
   (facts :integration :put
          (client/put (end-point-url default-port bucket "set-me")
                       {:body "with-a-value"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200 
+         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
                                                                                  :body "with-a-value"}))
 
   (facts :integration :put :multi-byte
          (client/put (end-point-url default-port bucket "put-multi-byte")
                       {:body "讓我們吃的點心"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "put-multi-byte")) => (contains {:status 200 
+         (client/get (end-point-url default-port bucket "put-multi-byte")) => (contains {:status 200
                                                                                      :body "讓我們吃的點心"}))
   (facts :integration :post
          (client/post (end-point-url default-port bucket "set-me")
                       {:body "with-a-value"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200 
+         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
                                                                                  :body "with-a-value"}))
 
   (facts :integration :post :multi-byte
          (client/post (end-point-url default-port bucket "post-multi-byte")
                       {:body "你想去哪兒吃"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "post-multi-byte")) => (contains {:status 200 
+         (client/get (end-point-url default-port bucket "post-multi-byte")) => (contains {:status 200
                                                                                      :body "你想去哪兒吃"}))
 
 
   (facts :integration :delete
-         (client/delete (end-point-url default-port bucket "delete-me") 
+         (client/delete (end-point-url default-port bucket "delete-me")
                         {:throw-exceptions false}) => (contains {:status 404})
          (client/post (end-point-url default-port bucket "delete-me")
                       {:body "with-a-value"}) => (contains {:status 200})
          (client/delete (end-point-url default-port bucket "delete-me") 
                         {:throw-exceptions false}) => (contains {:status 200})
-         (client/delete (end-point-url default-port bucket "delete-me") 
+         (client/delete (end-point-url default-port bucket "delete-me")
                         {:throw-exceptions false}) => (contains {:status 404})))
