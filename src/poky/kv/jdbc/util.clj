@@ -1,6 +1,7 @@
 (ns poky.kv.jdbc.util
   (:require [clojure.java.jdbc :as sql]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [environ.core :refer [env]])
   (:import com.mchange.v2.c3p0.ComboPooledDataSource))
 
 (def ^:private default-min-pool-size 3)
@@ -28,14 +29,15 @@
 
 (defn pool
   "Create a connection pool."
-  [spec &{:keys [min-pool-size] :or {min-pool-size default-min-pool-size}}]
+  [spec &{:keys [min-pool-size max-pool-size]
+          :or {min-pool-size default-min-pool-size max-pool-size default-max-pool-size}}]
   (let [cpds (doto (ComboPooledDataSource.)
                (.setDriverClass (:classname spec)) 
                (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
                (.setUser (:user spec))
                (.setPassword (:password spec))
                (.setMinPoolSize min-pool-size)
-               (.setMaxPoolSize default-max-pool-size)
+               (.setMaxPoolSize max-pool-size)
                (.setMaxIdleTimeExcessConnections (* 30 60))
                (.setMaxIdleTime (* 3 60 60)))] 
       {:datasource cpds}))
@@ -43,7 +45,7 @@
 (defn create-connection
   "Create a connection and delay it."
   [dsn]
-  (delay (pool (create-db-spec dsn))))
+  (delay (pool (create-db-spec dsn) :max-pool-size (env :max-pool-size default-max-pool-size))))
 
 (defn close-connection
   "Close the connection of a JdbcKeyValue object."
