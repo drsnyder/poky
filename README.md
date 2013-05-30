@@ -19,6 +19,26 @@ practically or cost effectively fit in-memory using redis or memcached. Poky pro
 alternative where the data set size could be much larger and bounded only by
 PostgreSQL's maximum table size (currently 32TB).
 
+## Deploy Poky as a Service
+
+Before deploying Poky as a service, confirm or edit the settings in the
+capistrano configuration file config/deploy.rb. You will be primarily concerned
+that the hostnames are configured correctly for your environment.
+
+Confirm that you have varnish and daemonize installed on the target system. See
+the dependencies section below.
+
+Next, deploy to the environment of choice:
+
+    cap development deploy
+
+Other configuration files of interest:
+
+ * config/defaults.vcl: the default varnish configuration.
+ * config/deploy.rb: the capistrano configuration.
+ * config/poky.defaults: default settings for the poky service.
+ * config/varnish.defaults: default settings for varnishd.
+
 ## HTTP Server Usage
 
 Create a poky database and create the table:
@@ -64,8 +84,11 @@ For additional documentation:
 
 ## Dependencies
 
+The following dependencies are required to deploy (or run) poky as a service.
+
  * [daemonize](http://software.clapper.org/daemonize/)
  * [varnish](https://www.varnish-cache.org/)
+ * [capistrano](https://github.com/capistrano/capistrano)
 
 ## Contributors
 
