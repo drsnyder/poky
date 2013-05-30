@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/drsnyder/poky.png)](https://travis-ci.org/drsnyder/poky)
+
+
 # Poky
 
 Poky is a work in progress. 
@@ -5,10 +8,6 @@ Poky is a work in progress.
 Poky is a bucketed key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks HTTP.
 Poky uses [Clojure](http://clojure.org/) and the [Compojure](https://github.com/weavejester/compojure) web framework to
 provide a REST interface over HTTP. Poky can be combined with [varnish](https://www.varnish-cache.org/) to speed up the REST API.
-
-Experimental WIP: The [memcached](https://github.com/memcached/memcached/blob/master/doc/protocol.txt)
-protocol may also be supported on top of the asynchronous communication
-framework [Aleph](https://github.com/ztellman/aleph).
 
 ## Rationale
 
@@ -45,12 +44,12 @@ option.
 
 For putting data in, both POST and PUT are accepted.
 
-    $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/bucket/key
-    $ curl -d"\"json value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8081/bucket/key
-    $ curl -d"value" -H'Content-Type: text/plain' -v -X PUT http://localhost:8081/bucket/key
+    $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/kv/bucket/key
+    $ curl -d"\"json value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8081/kv/bucket/key
+    $ curl -d"value" -H'Content-Type: text/plain' -v -X PUT http://localhost:8081/kv/bucket/key
 
 
-    $ curl -d"value" -v -X POST http://localhost:8081/bucket/key
+    $ curl -d"value" -v -X POST http://localhost:8081/kv/bucket/key
 
 When putting data in, you should expect a status code of 200 if the request was
 completed successfully.
@@ -58,10 +57,12 @@ completed successfully.
 
 When getting data out, use GET:
 
-    $ curl -X GET http://localhost:8081/bucket/key
+    $ curl -X GET http://localhost:8081/kv/bucket/key
     value
 
-Expect a status code of 200 and the data as the body.
+For additional documentation:
+
+    $ curl -X GET http://localhost:8081/help
 
 ## Dependencies
 

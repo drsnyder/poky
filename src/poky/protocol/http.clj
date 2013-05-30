@@ -1,11 +1,12 @@
 (ns poky.protocol.http
   (:require [poky.kv.core :as kv]
             [poky.util :as util]
+            [clojure.tools.logging :refer [infof]]
             (compojure [core :refer :all]
                        [route :as route]
                        [handler :as handler])
             [ring.adapter.jetty :as jetty]
-            [ring.util.response :refer [response not-found charset header]]
+            [ring.util.response :refer [response status not-found charset header]]
             (ring.middleware [format-response :as format-response ]
                              [format-params :as format-params])
             [cheshire.core :as json]
@@ -27,6 +28,7 @@ Other:
 Status codes to expect:
   - 200 on success
   - 404 when the object is not found
+  - 412 when an update is rejected
   - 500 on server error
 ")
 
@@ -43,15 +45,17 @@ Status codes to expect:
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (kv/set* kvstore b k body)
-  (response "")) ; empty 200
+  (condp = (kv/set* kvstore b k body)
+    :updated (response "")
+    :inserted (response "")
+    :rejected (-> (response "") (status 412))
+    (-> (response "Error, PUT/POST could not be completed.") (status 500))))
 
 (defn- wrap-delete
   [kvstore b k params headers]
   (if (kv/delete* kvstore b k)
     (response "")    ; empty 200
     (not-found ""))) ; empty 404
-
 
 
 (defn- put-body
@@ -120,6 +124,7 @@ Status codes to expect:
   MAX_THREADS
   "
   [kvstore port]
+  (infof "Starting poky on port %d" port)
   (jetty/run-jetty (api kvstore)
                    {:port port
                     :max-threads (env :max-threads default-jetty-max-threads)
