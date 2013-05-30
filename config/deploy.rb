@@ -4,7 +4,7 @@
 # environment.
 #
 # Settings:
-# -s branch=http-head 
+# -s branch=master
 # -s jmx_port=9101
 # -s statsd_host=""
 # -s varnishd="/usr/local/sbin/varnishd"
@@ -115,7 +115,7 @@ end
 namespace :deploy do
 
     # allow -s branch=todeploy
-    set :branch, fetch(:branch, "http-head")
+    set :branch, fetch(:branch, "master")
 
     # allow -s build_script="/path/to/lein uberjar"
     set :build_script, fetch(:build_script, "lein clean && lein uberjar")
