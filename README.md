@@ -3,8 +3,6 @@
 
 # Poky
 
-Poky is a work in progress. 
-
 Poky is a bucketed key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks HTTP.
 Poky uses [Clojure](http://clojure.org/) and the [Compojure](https://github.com/weavejester/compojure) web framework to
 provide a REST interface over HTTP. Poky can be combined with [varnish](https://www.varnish-cache.org/) to speed up the REST API.
