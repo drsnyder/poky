@@ -1,8 +1,10 @@
 (ns poky.kv.jdbc.util
   (:require [clojure.java.jdbc :as sql]
             [clojure.string :as string]
+            [clojure.tools.logging :refer [warn]]
             [environ.core :refer [env]])
-  (:import com.mchange.v2.c3p0.ComboPooledDataSource))
+  (:import com.mchange.v2.c3p0.ComboPooledDataSource
+     [java.sql SQLException Timestamp]))
 
 (def ^:private default-min-pool-size 3)
 (def ^:private default-max-pool-size 3)
@@ -32,14 +34,14 @@
   [spec &{:keys [min-pool-size max-pool-size]
           :or {min-pool-size default-min-pool-size max-pool-size default-max-pool-size}}]
   (let [cpds (doto (ComboPooledDataSource.)
-               (.setDriverClass (:classname spec)) 
+               (.setDriverClass (:classname spec))
                (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
                (.setUser (:user spec))
                (.setPassword (:password spec))
                (.setMinPoolSize min-pool-size)
                (.setMaxPoolSize max-pool-size)
                (.setMaxIdleTimeExcessConnections (* 30 60))
-               (.setMaxIdleTime (* 3 60 60)))] 
+               (.setMaxIdleTime (* 3 60 60)))]
       {:datasource cpds}))
 
 (defn create-connection
@@ -58,6 +60,34 @@
   (sql/with-connection conn
     (sql/delete-rows "poky"
        ["bucket=?" b])))
+
+(defn format-sql-exception
+  "Formats the contents of an SQLException and return string.
+  Similar to clojure.java.jdbc/print-sql-exception, but doesn't write to *out*"
+  [^SQLException exception]
+  (let [^Class exception-class (class exception)]
+    (format (str "%s:" \newline
+                 " Message: %s" \newline
+                 " SQLState: %s" \newline
+                 " Error Code: %d")
+            (.getSimpleName exception-class)
+            (.getMessage exception)
+            (.getSQLState exception)
+            (.getErrorCode exception))))
+
+(defn warn-sql-exception
+  "Outputs a formatted SQLException to log warn"
+  [^SQLException e]
+  (doall (map #(warn (format-sql-exception %))
+              (iterator-seq (.iterator e)))))
+
+(defmacro with-logged-connection [conn & body]
+    `(try
+         (sql/with-connection ~conn
+              ~@body)
+         (catch SQLException e#
+             (warn-sql-exception e#))))
+
 
 (defn jdbc-get
   "Get the tuple at bucket b and key k. Returns a map with the attributes of the table."
@@ -82,12 +112,12 @@
 (defn jdbc-set
   "Set a bucket b and key k to value v. Returns true on success and false on failure."
   ([conn b k v]
-  (sql/with-connection conn
+  (with-logged-connection conn
     (sql/update-or-insert-values "poky"
        ["bucket=? AND key=?" b k]
        {:bucket b :key k :data v})))
   ([conn b k v modified]
-   (sql/with-connection conn
+  (with-logged-connection conn
      (sql/update-or-insert-values "poky"
        ["bucket=? AND key=?" b k]
        {:bucket b :key k :data v :modified_at modified}))))

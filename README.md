@@ -86,6 +86,10 @@ For additional documentation:
 
 ## Dependencies
 
+Poky was developed and tested on PostgreSQL 9.2.
+
+ * [PostgreSQL 9.2](http://www.postgresql.org/)
+
 The following dependencies are required to deploy (or run) poky as a service.
 
  * [daemonize](http://software.clapper.org/daemonize/)
