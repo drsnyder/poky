@@ -60,6 +60,8 @@ OR
 By default, the server listens on 8081. To change the listen port, use the -p
 option.
 
+## API
+
 For putting data in, both POST and PUT are accepted.
 
     $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/kv/bucket/key
