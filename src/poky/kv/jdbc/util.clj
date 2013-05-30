@@ -81,11 +81,16 @@
 
 (defn jdbc-set
   "Set a bucket b and key k to value v. Returns true on success and false on failure."
-  [conn b k v]
+  ([conn b k v]
   (sql/with-connection conn
     (sql/update-or-insert-values "poky"
        ["bucket=? AND key=?" b k]
        {:bucket b :key k :data v})))
+  ([conn b k v modified]
+   (sql/with-connection conn
+     (sql/update-or-insert-values "poky"
+       ["bucket=? AND key=?" b k]
+       {:bucket b :key k :data v :modified_at modified}))))
 
 
 (defn jdbc-delete
