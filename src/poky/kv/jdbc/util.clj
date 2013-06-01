@@ -111,17 +111,14 @@
 
 (defn jdbc-set
   "Set a bucket b and key k to value v. Returns true on success and false on failure."
-  ([conn b k v]
-  (with-logged-connection conn
-    (sql/update-or-insert-values "poky"
-       ["bucket=? AND key=?" b k]
-       {:bucket b :key k :data v})))
   ([conn b k v modified]
-  (with-logged-connection conn
-     (sql/update-or-insert-values "poky"
-       ["bucket=? AND key=?" b k]
-       {:bucket b :key k :data v :modified_at modified}))))
-
+   (with-logged-connection conn
+     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, ?) AS result" b k v modified]
+       (first results))))
+  ([conn b k v]
+   (with-logged-connection conn
+     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, NOW()) AS result" b k v]
+       (first results)))))
 
 (defn jdbc-delete
   "Delete the value at bucket b and key k. Returns true on success and false if the

@@ -20,18 +20,17 @@
                                         ?form
                                         (close-connection @@S)))]
   (facts :integration :jdbc-set
-         (jdbc-set @@S bucket "key" "value") => (contains {:key "key" :data "value"})
-         (jdbc-set @@S bucket "key" "value") => '(1)
-         ; TODO: currently broken because we get a unique key violation with
-         ; update-or-insert-values
-         (jdbc-set @@S bucket "key" "value" (tc/to-sql-date (t/minus (t/now) (t/days 1)))) => '(0))
+         (jdbc-set @@S bucket "key" "value") => (contains {:result "inserted"})
+         (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})
+         (jdbc-set @@S bucket "key" "value" (tc/to-sql-date (t/plus (t/now) (t/days 1)))) => (contains {:result "updated"})
+         (jdbc-set @@S bucket "key" "value" (tc/to-sql-date (t/minus (t/now) (t/days 1)))) => (contains {:result "rejected"}))
 
   (facts :integration :jdbc-get
          (jdbc-get @@S bucket "key") => falsey
-         (jdbc-set @@S bucket "key" "value") => (contains {:key "key" :data "value"})
+         (jdbc-set @@S bucket "key" "value") => (contains {:result "inserted"})
          (jdbc-get @@S bucket "key") => (contains {:key "key" :data "value"}))
 
   (facts :integration :jdbc-delete
-         (jdbc-set @@S bucket "key" "value") => (contains {:key "key" :data "value"})
+         (jdbc-set @@S bucket "key" "value") => (contains {:result "inserted"})
          (jdbc-delete @@S bucket "key") => '(1)
          (jdbc-delete @@S bucket "key") => '(0)))

@@ -10,35 +10,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz) RETURNS VOID AS
+DROP TRIGGER IF EXISTS poky_only_if_unmodified_since ON poky;
+CREATE TRIGGER poky_only_if_unmodified_since
+ BEFORE UPDATE ON poky
+   FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since();
+
+
+
+-- upsert tuple while ensuring that the modified timestamp is >= than the current timestamp if the record exists.
+-- Return values:
+--  'inserted' on insert
+--  'updated' on successful update
+--  'rejected' when the modified at does not satisfy the >= condition
+CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz) RETURNS TEXT AS
 $$
+DECLARE
+    existing_row_lock RECORD;
 BEGIN
-    -- from http://www.postgresql.org/docs/current/static/plpgsql-control-structures.html#PLPGSQL-UPSERT-EXAMPLE
-
-    -- first try to update the key
-    -- this won't work with the above only_if_unmodified_since() because found will be false since
-    -- the query did not affect any rows (http://www.postgresql.org/docs/8.2/static/plpgsql-statements.html)
-    -- if you add the surrounding loop, you end up in an infinite loop because the record is never found
-
-    -- can we select for update into a row and if the row exists, try the update, OTW, insert?
-    UPDATE poky SET data = d, modified_at = m WHERE key = k AND bucket = b;
-    IF found THEN
-        RETURN;
-    END IF;
-    -- not there, so try to insert the key
-    -- if someone else inserts the same key concurrently,
-    -- we could get a unique-key failure
     BEGIN
         INSERT INTO poky (bucket, key, data, modified_at) VALUES (b, k, d, m);
-        RETURN;
+        RETURN 'inserted';
     EXCEPTION WHEN unique_violation THEN
-        -- Do nothing, and loop to try the UPDATE again.
+        UPDATE poky SET data = d, modified_at = m WHERE key = k AND bucket = b;
+        IF (FOUND) THEN
+            RETURN 'updated';
+        ELSE
+            RETURN 'rejected';
+        END IF;
     END;
 END;
 $$
 LANGUAGE plpgsql;
-
-
-CREATE TRIGGER poky_only_if_unmodified_since
- BEFORE UPDATE ON poky
-   FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since();
