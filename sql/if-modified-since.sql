@@ -1,10 +1,11 @@
+-- Ensure that we only accept updates to poky if the modified_at timestamp is
+-- greater than or equal to the current modified_at.
 CREATE OR REPLACE FUNCTION only_if_unmodified_since() RETURNS trigger AS $$
 BEGIN
     IF NEW.modified_at >= OLD.modified_at THEN
         RETURN NEW;
     ELSE
         -- short circuit the update if the condition is not satisfied
-        RAISE NOTICE 'Bypassing update. The current record is newer.';
         RETURN NULL;
     END IF;
 END;
