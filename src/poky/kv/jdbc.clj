@@ -22,14 +22,11 @@
   (mget* [this b ks]
     (into {} (map (juxt :key :data) (jdbc-mget @conn b ks))))
   (set* [this b k value]
-    (when-let [ret (jdbc-set @conn b k value)]
-      (cond
-        (and (seq? ret) (util/first= ret 1)) :updated
-        (and (seq? ret) (util/first= ret 0)) :rejected
-        (map? ret) :inserted
-        :else false)))
+    (set* this b k value {}))
   (set* [this b k value params]
-    (set* this b k value))
+    (if-let [modified (get params :modified nil)]
+      (jdbc-set @conn b k value modified)
+      (jdbc-set @conn b k value)))
   (delete* [this b k]
     (util/first= (jdbc-delete @conn b k) 1))
 
