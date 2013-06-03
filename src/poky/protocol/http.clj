@@ -46,8 +46,10 @@ Status codes to expect:
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (let [modified (tc/to-sql-date (get headers "if-unmodified-since" nil))]
-    (condp = (kv/set* kvstore b k body {:modified modified})
+  (let [ret (if-let [modified (tc/to-sql-date (get headers "if-unmodified-since" nil))]
+              (kv/set* kvstore b k body {:modified modified})
+              (kv/set* kvstore b k body))]
+    (condp = ret
       :updated (response "")
       :inserted (response "")
       :rejected (-> (response "") (status 412))

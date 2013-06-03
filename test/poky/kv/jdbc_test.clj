@@ -35,15 +35,20 @@
 
 
 (facts :jdbc :set
+       (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :inserted
+       (provided
+         (create-connection ..store..) => (delay ..store..)
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => {:result "inserted"})
+
        (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :updated
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => '(1))
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => {:result "updated"})
 
        (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :rejected
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => '(0)))
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => {:result "rejected"}))
 
 (facts :jdbc :delete
        (kv/delete* (kv.jdbc/create ..store..) ..bucket.. ..key..) => true
