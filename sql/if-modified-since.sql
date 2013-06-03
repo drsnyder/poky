@@ -16,6 +16,8 @@ CREATE TRIGGER poky_only_if_unmodified_since
  BEFORE UPDATE ON poky
    FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since();
 
+ALTER TABLE poky ALTER COLUMN modified_at SET NOT NULL;
+ALTER TABLE poky ALTER COLUMN created_at SET NOT NULL;
 
 
 -- upsert tuple while ensuring that the modified timestamp is >= than the current timestamp if the record exists.
