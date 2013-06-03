@@ -7,7 +7,7 @@
      [java.sql SQLException Timestamp]))
 
 (def ^:private default-min-pool-size 3)
-(def ^:private default-max-pool-size 3)
+(def ^:private default-max-pool-size 15)
 (def ^:private default-driver "org.postgresql.Driver")
 
 (defn create-db-spec
