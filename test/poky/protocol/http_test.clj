@@ -99,33 +99,46 @@
                                         (kv/close (system/store @S))))]
 
   (facts :integration :put
-         (client/put (end-point-url default-port bucket "set-me")
-                      {:headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/now))}
-                       :body "with-a-value"}) => (contains {:status 200})
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/now))}
+            :body "with-a-value"}) => (contains {:status 200})
          ; If-Unmodified-Since in the past, should be rejected
-         (client/put (end-point-url default-port bucket "set-me")
-                      {:throw-exceptions false
-                       :headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/minus (t/now) (t/days 1)))}
-                       :body "with-a-value"}) => (contains {:status 412})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
-                                                                                 :body "with-a-value"}))
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-unmodified-since"
+                      (tf/unparse (tf/formatters :rfc822) (t/minus (t/now) (t/days 1)))}
+            :body "with-a-value"}) => (contains {:status 412})
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :headers #(string? (get % "last-modified"))
+                                                                       :body "with-a-value"}))
 
   (facts :integration :put :multi-byte
-         (client/put (end-point-url default-port bucket "put-multi-byte")
-                      {:body "讓我們吃的點心"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "put-multi-byte")) => (contains {:status 200
-                                                                                     :body "讓我們吃的點心"}))
+         (client/put
+           (end-point-url default-port bucket "put-multi-byte")
+           {:body "讓我們吃的點心"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "put-multi-byte")) => (contains
+                                                                      {:status 200
+                                                                       :body "讓我們吃的點心"}))
   (facts :integration :post
-         (client/post (end-point-url default-port bucket "set-me")
-                      {:body "with-a-value"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
-                                                                                 :body "with-a-value"}))
+         (client/post
+           (end-point-url default-port bucket "set-me")
+           {:body "with-a-value"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :body "with-a-value"}))
 
   (facts :integration :post :multi-byte
-         (client/post (end-point-url default-port bucket "post-multi-byte")
-                      {:body "你想去哪兒吃"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "post-multi-byte")) => (contains {:status 200
-                                                                                     :body "你想去哪兒吃"}))
+         (client/post
+           (end-point-url default-port bucket "post-multi-byte")
+           {:body "你想去哪兒吃"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "post-multi-byte")) => (contains
+                                                                       {:status 200
+                                                                        :body "你想去哪兒吃"}))
 
 
   (facts :integration :delete

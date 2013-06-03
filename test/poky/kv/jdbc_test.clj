@@ -20,10 +20,13 @@
 (facts :jdbc :get
        ; midje doesn't allow you to test metaconstants for equality. inserting
        ; bogus values here
-       (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => {"some-key" "some-value" :modified_at "modified"}
+       (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => {"some-key" "some-value"
+                                                                   :modified_at "modified"}
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-get ..store.. ..bucket.. ..key..) => {:key "some-key" :data "some-value" :modified_at "modified"})
+         (jdbc-get ..store.. ..bucket.. ..key..) => {:key "some-key"
+                                                     :data "some-value"
+                                                     :modified_at "modified"})
 
        (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => nil
        (provided
