@@ -11,6 +11,7 @@
                              [format-params :as format-params])
             [cheshire.core :as json]
             [environ.core :refer [env]]
+            [clj-time.coerce :as tc]
             [ring.middleware.stacktrace :as trace]))
 
 (def ^:private default-jetty-max-threads 25)
@@ -45,11 +46,12 @@ Status codes to expect:
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (condp = (kv/set* kvstore b k body)
-    :updated (response "")
-    :inserted (response "")
-    :rejected (-> (response "") (status 412))
-    (-> (response "Error, PUT/POST could not be completed.") (status 500))))
+  (let [modified (tc/to-sql-date (get headers "if-unmodified-since" nil))]
+    (condp = (kv/set* kvstore b k body {:modified modified})
+      :updated (response "")
+      :inserted (response "")
+      :rejected (-> (response "") (status 412))
+      (-> (response "Error, PUT/POST could not be completed.") (status 500)))))
 
 (defn- wrap-delete
   [kvstore b k params headers]

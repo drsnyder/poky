@@ -4,10 +4,13 @@
             [poky.kv.jdbc.util :refer :all]
             [poky.util :as util]
             [environ.core :refer [env]]
+            [clj-time.core :as t]
+            [clj-time.coerce :as tc]
             [clojure.java.jdbc :as sql]
             [midje.sweet :refer :all])
   (:import [poky.kv.core.KeyValue]
-           [poky.kv.core.Connection]))
+           [poky.kv.core.Connection]
+           [java.sql.Timestamp]))
 
 (def bucket (str (.name *ns*)))
 (def S (atom nil))
@@ -58,12 +61,17 @@
                                         (kv/close @S)))]
   (facts :integration :set
          (kv/set* @S bucket "key" "value") => :inserted
-         (kv/set* @S bucket "key" "value") => :updated)
+
+         (kv/set* @S bucket "key" "value") => :updated
+         (kv/set* @S bucket "key" "value" {:modified
+                                           (tc/to-sql-date
+                                             (t/minus (t/now) (t/days 1)))}) => :rejected)
 
   (facts :integration :get
          (kv/get* @S bucket "key") => falsey
          (kv/set* @S bucket "key" "value") => :inserted
-         (kv/get* @S bucket "key") => (contains {"key" "value"}))
+         (kv/get* @S bucket "key") => (contains {"key" "value" :modified_at
+                                                 #(instance? java.sql.Timestamp %)}))
 
   (facts :integration :delete
          (kv/set* @S bucket "key" "value") => :inserted

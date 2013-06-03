@@ -7,6 +7,8 @@
             [poky.system :as system]
             [environ.core :refer [env]]
             [clj-http.client :as client]
+            [clj-time.core :as t]
+            [clj-time.format :as tf]
             [midje.util :refer [expose-testables]]
             [midje.sweet :refer :all])
   (:import [java.util.DateFormat]))
@@ -98,7 +100,13 @@
 
   (facts :integration :put
          (client/put (end-point-url default-port bucket "set-me")
-                      {:body "with-a-value"}) => (contains {:status 200})
+                      {:headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/now))}
+                       :body "with-a-value"}) => (contains {:status 200})
+         ; If-Unmodified-Since in the past, should be rejected
+         (client/put (end-point-url default-port bucket "set-me")
+                      {:throw-exceptions false
+                       :headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/minus (t/now) (t/days 1)))}
+                       :body "with-a-value"}) => (contains {:status 412})
          (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
                                                                                  :body "with-a-value"}))
 
