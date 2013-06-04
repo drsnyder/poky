@@ -101,7 +101,7 @@
   (facts :integration :put
          (client/put
            (end-point-url default-port bucket "set-me")
-           {:headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/now))}
+           {:headers {"if-unmodified-since" (tf/unparse util/rfc1123-format (t/now))}
             :body "with-a-value"}) => (contains {:status 200})
 
          (client/get
@@ -114,7 +114,7 @@
            (end-point-url default-port bucket "set-me")
            {:throw-exceptions false
             :headers {"if-unmodified-since"
-                      (tf/unparse (tf/formatters :rfc822) (t/minus (t/now) (t/days 1)))}
+                      (tf/unparse util/rfc1123-format (t/minus (t/now) (t/days 1)))}
             :body "with-a-value"}) => (contains {:status 412})
 
          ; PUT without if-unmodified-since should be accepted

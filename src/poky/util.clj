@@ -42,13 +42,23 @@
   "Convert java.sql.Timestamp to an HTTP formatted date."
   [#^Timestamp date]
   (when date
-    (tf/unparse rfc1123-format (tc/from-sql-date date))))
+    (try
+      (tf/unparse rfc1123-format (tc/from-sql-date date))
+      ; TODO: how should we handle this?
+      (catch java.lang.IllegalArgumentException e
+        nil))))
 
 (defn http-date->Timestamp
   "Convert an RFC1123 date string to a java.sql.Timestamp."
   [#^String date]
   (when date
-    (tc/to-timestamp (tf/parse rfc1123-format date))))
+    (try
+      (tc/to-timestamp (tf/parse rfc1123-format date))
+      (catch java.lang.IllegalArgumentException e
+        ; TODO: how should we handle this?
+        ; this is probably exceptional since if we return nil, it will cause an
+        ; unconditional write
+        nil))))
 
 
 
