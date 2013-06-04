@@ -24,7 +24,12 @@
          (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})
          (jdbc-set @@S bucket "key" "value"
                    (tc/to-sql-date (t/plus (t/now) (t/days 1)))) => (contains {:result "updated"})
+
+         ; unconditionally accept a set without a modified
          (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})
+
+         ; the modified_at should be 1 day in the future. this should be
+         ; rejected
          (jdbc-set @@S bucket "key" "value"
                    (tc/to-sql-date (t/now))) => (contains {:result "rejected"}))
 
