@@ -11,6 +11,7 @@
                              [format-params :as format-params])
             [cheshire.core :as json]
             [environ.core :refer [env]]
+            [clj-time.coerce :as tc]
             [ring.middleware.stacktrace :as trace]))
 
 (def ^:private default-jetty-max-threads 25)
@@ -40,16 +41,23 @@ Status codes to expect:
         modified (get t :modified_at nil)]
     (if t
       (cond-> (response (get t k))
-              modified (header "Last-Modified" (util/http-date modified)))
+              modified (header "Last-Modified" (util/Timestamp->http-date modified)))
       (not-found ""))))
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (condp = (kv/set* kvstore b k body)
-    :updated (response "")
-    :inserted (response "")
-    :rejected (-> (response "") (status 412))
-    (-> (response "Error, PUT/POST could not be completed.") (status 500))))
+  (let [if-unmodified-since (get headers "if-unmodified-since" nil)
+        modified (util/http-date->Timestamp if-unmodified-since)]
+    (if (and if-unmodified-since (not modified))
+      ; if If-Unmodified-Since was specified in the header, but didn't parse,
+      ; reject this as a bad request.
+      (-> (response "Error in If-Unmodified-Since format. Use RFC 1123 date format.")
+          (status 400))
+      (condp = (kv/set* kvstore b k body {:modified modified})
+        :updated (response "")
+        :inserted (response "")
+        :rejected (-> (response "") (status 412))
+        (-> (response "Error, PUT/POST could not be completed.") (status 500))))))
 
 (defn- wrap-delete
   [kvstore b k params headers]

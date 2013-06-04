@@ -7,6 +7,8 @@
             [poky.system :as system]
             [environ.core :refer [env]]
             [clj-http.client :as client]
+            [clj-time.core :as t]
+            [clj-time.format :as tf]
             [midje.util :refer [expose-testables]]
             [midje.sweet :refer :all])
   (:import [java.util.DateFormat]))
@@ -42,28 +44,34 @@
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :updated)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :updated)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :inserted)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :inserted)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 412})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :rejected)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :rejected)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body "Error, PUT/POST could not be completed."
                                                                        :headers map?
                                                                        :status 500})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => false))
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => false)
+
+       (#'http/wrap-put ..store.. ..bucket.. ..key..
+                        ..params.. {"if-unmodified-since" "bogus"} ..body..) => (contains
+                                                                                    {:body "Error in If-Unmodified-Since format. Use RFC 1123 date format."
+                                                                                     :headers map?
+                                                                                     :status 400}))
 
 
 (facts :delete
@@ -97,27 +105,66 @@
                                         (kv/close (system/store @S))))]
 
   (facts :integration :put
-         (client/put (end-point-url default-port bucket "set-me")
-                      {:body "with-a-value"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
-                                                                                 :body "with-a-value"}))
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:headers {"if-unmodified-since" (tf/unparse util/rfc1123-format (t/now))}
+            :body "with-a-value"}) => (contains {:status 200})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :headers #(string? (get % "last-modified"))
+                                                                       :body "with-a-value"})
+
+         ; If-Unmodified-Since in the past, should be rejected
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-unmodified-since"
+                      (tf/unparse util/rfc1123-format (t/minus (t/now) (t/days 1)))}
+            :body "with-a-value"}) => (contains {:status 412})
+
+         ; Malformed If-Unmodified-Since should be rejected
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-unmodified-since" "Tue, 04 Jun 2013 03:01:31 000"}
+            :body "with-a-value"}) => (contains {:status 400 :body string?})
+
+         ; PUT without if-unmodified-since should be accepted
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :body "NEW-with-a-value"}) => (contains {:status 200})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :headers #(string? (get % "last-modified"))
+                                                                       :body "NEW-with-a-value"}))
 
   (facts :integration :put :multi-byte
-         (client/put (end-point-url default-port bucket "put-multi-byte")
-                      {:body "讓我們吃的點心"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "put-multi-byte")) => (contains {:status 200
-                                                                                     :body "讓我們吃的點心"}))
+         (client/put
+           (end-point-url default-port bucket "put-multi-byte")
+           {:body "讓我們吃的點心"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "put-multi-byte")) => (contains
+                                                                      {:status 200
+                                                                       :body "讓我們吃的點心"}))
   (facts :integration :post
-         (client/post (end-point-url default-port bucket "set-me")
-                      {:body "with-a-value"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "set-me")) => (contains {:status 200
-                                                                                 :body "with-a-value"}))
+         (client/post
+           (end-point-url default-port bucket "set-me")
+           {:body "with-a-value"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :body "with-a-value"}))
 
   (facts :integration :post :multi-byte
-         (client/post (end-point-url default-port bucket "post-multi-byte")
-                      {:body "你想去哪兒吃"}) => (contains {:status 200})
-         (client/get (end-point-url default-port bucket "post-multi-byte")) => (contains {:status 200
-                                                                                     :body "你想去哪兒吃"}))
+         (client/post
+           (end-point-url default-port bucket "post-multi-byte")
+           {:body "你想去哪兒吃"}) => (contains {:status 200})
+         (client/get
+           (end-point-url default-port bucket "post-multi-byte")) => (contains
+                                                                       {:status 200
+                                                                        :body "你想去哪兒吃"}))
 
 
   (facts :integration :delete

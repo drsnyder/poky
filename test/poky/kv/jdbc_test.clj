@@ -4,10 +4,13 @@
             [poky.kv.jdbc.util :refer :all]
             [poky.util :as util]
             [environ.core :refer [env]]
+            [clj-time.core :as t]
+            [clj-time.coerce :as tc]
             [clojure.java.jdbc :as sql]
             [midje.sweet :refer :all])
   (:import [poky.kv.core.KeyValue]
-           [poky.kv.core.Connection]))
+           [poky.kv.core.Connection]
+           [java.sql.Timestamp]))
 
 (def bucket (str (.name *ns*)))
 (def S (atom nil))
@@ -17,10 +20,13 @@
 (facts :jdbc :get
        ; midje doesn't allow you to test metaconstants for equality. inserting
        ; bogus values here
-       (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => {"some-key" "some-value" :modified_at "modified"}
+       (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => {"some-key" "some-value"
+                                                                   :modified_at "modified"}
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-get ..store.. ..bucket.. ..key..) => {:key "some-key" :data "some-value" :modified_at "modified"})
+         (jdbc-get ..store.. ..bucket.. ..key..) => {:key "some-key"
+                                                     :data "some-value"
+                                                     :modified_at "modified"})
 
        (kv/get* (kv.jdbc/create ..store..) ..bucket.. ..key..) => nil
        (provided
@@ -29,15 +35,20 @@
 
 
 (facts :jdbc :set
+       (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :inserted
+       (provided
+         (create-connection ..store..) => (delay ..store..)
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value.. nil) => {:result "inserted"})
+
        (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :updated
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => '(1))
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value.. nil) => {:result "updated"})
 
        (kv/set* (kv.jdbc/create ..store..) ..bucket.. ..key.. ..value..) => :rejected
        (provided
          (create-connection ..store..) => (delay ..store..)
-         (jdbc-set ..store.. ..bucket.. ..key.. ..value..) => '(0)))
+         (jdbc-set ..store.. ..bucket.. ..key.. ..value.. nil) => {:result "rejected"}))
 
 (facts :jdbc :delete
        (kv/delete* (kv.jdbc/create ..store..) ..bucket.. ..key..) => true
@@ -58,12 +69,17 @@
                                         (kv/close @S)))]
   (facts :integration :set
          (kv/set* @S bucket "key" "value") => :inserted
-         (kv/set* @S bucket "key" "value") => :updated)
+
+         (kv/set* @S bucket "key" "value") => :updated
+         (kv/set* @S bucket "key" "value" {:modified
+                                           (tc/to-sql-date
+                                             (t/minus (t/now) (t/days 1)))}) => :rejected)
 
   (facts :integration :get
          (kv/get* @S bucket "key") => falsey
          (kv/set* @S bucket "key" "value") => :inserted
-         (kv/get* @S bucket "key") => (contains {"key" "value"}))
+         (kv/get* @S bucket "key") => (contains {"key" "value" :modified_at
+                                                 #(instance? java.sql.Timestamp %)}))
 
   (facts :integration :delete
          (kv/set* @S bucket "key" "value") => :inserted
