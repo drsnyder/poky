@@ -76,10 +76,12 @@ For putting data in, both POST and PUT are accepted.
 
 
     $ curl -d"value" -v -X POST http://localhost:8081/kv/bucket/key
+    $ curl -d"value" -H "If-Unmodified-Since: Tue, 04 Jun 2013 03:01:31 GMT" -v -X POST http://localhost:8081/kv/bucket/key
 
 When putting data in, you should expect a status code of 200 if the request was
-completed successfully.
-
+completed successfully. If a newer version has already been committed the
+request will be rejected with a 412 status code. See the Consistency section
+below.
 
 When getting data out, use GET:
 
