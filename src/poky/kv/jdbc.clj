@@ -24,9 +24,7 @@
   (set* [this b k value]
     (set* this b k value {}))
   (set* [this b k value params]
-    (when-let [ret (if-let [modified (get params :modified nil)]
-                     (jdbc-set @conn b k value modified)
-                     (jdbc-set @conn b k value))]
+    (when-let [ret (jdbc-set @conn b k value (get params :modified nil))]
       (keyword (:result ret))))
   (delete* [this b k]
     (util/first= (jdbc-delete @conn b k) 1))

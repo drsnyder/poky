@@ -1,6 +1,5 @@
 (ns poky.util
-  (:require (clj-time [core :as t]
-                      [coerce :as tc]
+  (:require (clj-time [coerce :as tc]
                       [format :as tf]))
   (:import java.sql.Timestamp
            java.text.SimpleDateFormat
