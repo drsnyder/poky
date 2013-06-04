@@ -53,9 +53,7 @@ Status codes to expect:
       ; reject this as a bad request.
       (-> (response "Error in If-Unmodified-Since format. Use RFC 1123 date format.")
           (status 400))
-      (condp = (if modified
-                 (kv/set* kvstore b k body {:modified modified})
-                 (kv/set* kvstore b k body))
+      (condp = (kv/set* kvstore b k body {:modified modified})
         :updated (response "")
         :inserted (response "")
         :rejected (-> (response "") (status 412))

@@ -44,28 +44,28 @@
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :updated)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :updated)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :inserted)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :inserted)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 412})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => :rejected)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :rejected)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. ..headers.. ..body..) => (contains {:body "Error, PUT/POST could not be completed."
                                                                        :headers map?
                                                                        :status 500})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => false)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => false)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..params.. {"if-unmodified-since" "bogus"} ..body..) => (contains
