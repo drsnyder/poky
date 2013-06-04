@@ -84,6 +84,19 @@ For additional documentation:
 
     $ curl -X GET http://localhost:8081/help
 
+## Consistency
+
+Poky observes the If-Unmodified-Since header. If this header is present in a
+PUT/POST request the request will only be accepted if the timestamp supplied is
+greater than or equal to the current `modified_at`. If no If-Unmodified-Since is presented,
+the request will be unconditionally accepted and the `modified_at` current timestamp
+will be left unchanged.
+
+Use caution when omitting the If-Unmodified-Since header. If it's possible
+that two requests may attempt to update an object simultaneous the system can
+only guarantee that the most request request is accepted if the If-Unmodified-Since
+header is provided.
+
 ## Dependencies
 
 Poky was developed and tested on PostgreSQL 9.2.

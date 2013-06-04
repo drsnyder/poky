@@ -92,7 +92,7 @@
 (defn jdbc-get
   "Get the tuple at bucket b and key k. Returns a map with the attributes of the table."
   [conn b k]
-  (sql/with-connection conn
+  (with-logged-connection conn
     (sql/with-query-results
       results
       ["SELECT * FROM poky WHERE bucket=? AND key=?" b k]
@@ -101,7 +101,7 @@
 (defn jdbc-mget
   "Deprecated."
   [conn b ks]
-  (sql/with-connection conn
+  (with-logged-connection conn
     (sql/with-query-results results
       (vec (concat [(format "SELECT * FROM poky WHERE bucket=? AND key IN (%s)"
                             (string/join "," (repeat (count ks) "?")))
@@ -125,6 +125,6 @@
   "Delete the value at bucket b and key k. Returns true on success and false if the
   tuple does not exist."
   [conn b k]
-  (sql/with-connection conn
+  (with-logged-connection conn
     (sql/delete-rows "poky"
        ["bucket=? AND key=?" b k])))
