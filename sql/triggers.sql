@@ -17,7 +17,9 @@ CREATE TRIGGER poky_only_if_unmodified_since
    FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since();
 
 ALTER TABLE poky ALTER COLUMN modified_at SET NOT NULL;
+ALTER TABLE poky ALTER COLUMN modified_at SET DEFAULT NOW();
 ALTER TABLE poky ALTER COLUMN created_at SET NOT NULL;
+ALTER TABLE poky ALTER COLUMN created_at SET DEFAULT NOW();
 
 -- ensure that we are using UTC
 ALTER TABLE poky DROP CONSTRAINT IF EXISTS modified_at_utc_check;
@@ -37,7 +39,6 @@ ALTER TABLE poky ADD CONSTRAINT created_at_utc_check CHECK (EXTRACT(TIMEZONE FRO
 CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz DEFAULT NULL) RETURNS TEXT AS
 $$
 DECLARE
-    existing_row_lock RECORD;
 BEGIN
     BEGIN
         IF (m IS NOT NULL) THEN
