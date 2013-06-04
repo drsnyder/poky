@@ -103,6 +103,12 @@
            (end-point-url default-port bucket "set-me")
            {:headers {"if-unmodified-since" (tf/unparse (tf/formatters :rfc822) (t/now))}
             :body "with-a-value"}) => (contains {:status 200})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :headers #(string? (get % "last-modified"))
+                                                                       :body "with-a-value"})
+
          ; If-Unmodified-Since in the past, should be rejected
          (client/put
            (end-point-url default-port bucket "set-me")
@@ -110,10 +116,17 @@
             :headers {"if-unmodified-since"
                       (tf/unparse (tf/formatters :rfc822) (t/minus (t/now) (t/days 1)))}
             :body "with-a-value"}) => (contains {:status 412})
+
+         ; PUT without if-unmodified-since should be accepted
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :body "NEW-with-a-value"}) => (contains {:status 200})
+
          (client/get
            (end-point-url default-port bucket "set-me")) => (contains {:status 200
                                                                        :headers #(string? (get % "last-modified"))
-                                                                       :body "with-a-value"}))
+                                                                       :body "NEW-with-a-value"}))
 
   (facts :integration :put :multi-byte
          (client/put
