@@ -14,10 +14,16 @@ supporting PostgreSQL. They have come to rely on its proven architecture and its
 reputation for reliability and data integrity. Poky is an attempt to augment
 this investment by providing a simple key-value store using a REST API. 
 
-Additionally, some datasets are key-value in nature but are too big to
-practically or cost effectively fit in-memory using redis or memcached. Poky provides an
-alternative where the data set size could be much larger and bounded only by
+Some datasets are key-value in nature but are too big to practically or cost
+effectively fit in-memory using redis or memcached. Poky provides an alternative
+where the data set size could be much larger and bounded only by
 PostgreSQL's maximum table size (currently 32TB).
+
+Additionally, some types of data, though they may be derived, are resource
+intensive to generate. In Poky, once the data has been committed to disk, it will
+remain so even in the event of power loss, crashes, or errors which reduces or
+eliminates the possibility of a costly regeneration of the data.
+
 
 ## Deploy Poky as a Service
 
