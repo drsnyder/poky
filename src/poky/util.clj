@@ -1,5 +1,8 @@
 (ns poky.util
-  (:import java.text.SimpleDateFormat
+  (:require (clj-time [coerce :as tc]
+                      [format :as tf]))
+  (:import java.sql.Timestamp
+           java.text.SimpleDateFormat
            java.util.TimeZone
            java.util.Locale))
 
@@ -30,21 +33,32 @@
   ([n]
    (clojure.string/join "" (random-char-set n))))
 
-; inspiration came from
-; https://github.com/ordnungswidrig/compojure-rest/blob/master/src/compojure_rest/util.clj
-(defn http-date-format
-  "Generate an HTTP date format."
-  []
-  (doto (new SimpleDateFormat "EEE, dd MMM yyyy HH:mm:ss" Locale/US)
-    (.setTimeZone (TimeZone/getTimeZone "GMT"))))
 
+(def rfc1123 "EEE, dd MMM yyyy HH:mm:ss 'GMT'")
+(def rfc1123-format (tf/formatter rfc1123))
 
-(defn http-date
-  "Convert date to an HTTP formatted date."
-  [date]
-  (->> date
-       (.format (http-date-format))
-       (format "%s GMT")))
+(defn Timestamp->http-date
+  "Convert java.sql.Timestamp to an HTTP formatted date."
+  [#^Timestamp date]
+  (when date
+    (try
+      (tf/unparse rfc1123-format (tc/from-sql-date date))
+      ; TODO: how should we handle this?
+      (catch java.lang.IllegalArgumentException e
+        nil))))
+
+(defn http-date->Timestamp
+  "Convert an RFC1123 date string to a java.sql.Timestamp."
+  [#^String date]
+  (when date
+    (try
+      (tc/to-timestamp (tf/parse rfc1123-format date))
+      (catch java.lang.IllegalArgumentException e
+        ; TODO: how should we handle this?
+        ; this is probably exceptional since if we return nil, it will cause an
+        ; unconditional write
+        nil))))
+
 
 
 (defn first=

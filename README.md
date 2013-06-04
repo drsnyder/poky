@@ -14,10 +14,16 @@ supporting PostgreSQL. They have come to rely on its proven architecture and its
 reputation for reliability and data integrity. Poky is an attempt to augment
 this investment by providing a simple key-value store using a REST API. 
 
-Additionally, some datasets are key-value in nature but are too big to
-practically or cost effectively fit in-memory using redis or memcached. Poky provides an
-alternative where the data set size could be much larger and bounded only by
+Some datasets are key-value in nature but are too big to practically or cost
+effectively fit in-memory using redis or memcached. Poky provides an alternative
+where the data set size could be much larger and bounded only by
 PostgreSQL's maximum table size (currently 32TB).
+
+Additionally, some types of data, though they may be derived, are resource
+intensive to generate. In Poky, once the data has been committed to disk, it will
+remain so even in the event of power loss, crashes, or errors which reduces or
+eliminates the possibility of a costly regeneration of the data.
+
 
 ## Deploy Poky as a Service
 
@@ -70,10 +76,12 @@ For putting data in, both POST and PUT are accepted.
 
 
     $ curl -d"value" -v -X POST http://localhost:8081/kv/bucket/key
+    $ curl -d"value" -H "If-Unmodified-Since: Tue, 04 Jun 2013 03:01:31 GMT" -v -X POST http://localhost:8081/kv/bucket/key
 
 When putting data in, you should expect a status code of 200 if the request was
-completed successfully.
-
+completed successfully. If a newer version has already been committed the
+request will be rejected with a 412 status code. See the Consistency section
+below.
 
 When getting data out, use GET:
 
@@ -84,7 +92,24 @@ For additional documentation:
 
     $ curl -X GET http://localhost:8081/help
 
+## Consistency
+
+Poky observes the If-Unmodified-Since header. If this header is present in a
+PUT/POST request the request will only be accepted if the timestamp supplied is
+greater than or equal to the current `modified_at`. If no If-Unmodified-Since is presented,
+the request will be unconditionally accepted and the `modified_at` current timestamp
+will be left unchanged.
+
+Use caution when omitting the If-Unmodified-Since header. If it's possible
+that two requests may attempt to update an object simultaneous the system can
+only guarantee that the most request request is accepted if the If-Unmodified-Since
+header is provided.
+
 ## Dependencies
+
+Poky was developed and tested on PostgreSQL 9.2.
+
+ * [PostgreSQL 9.2](http://www.postgresql.org/)
 
 The following dependencies are required to deploy (or run) poky as a service.
 
