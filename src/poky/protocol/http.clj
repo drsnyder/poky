@@ -41,15 +41,13 @@ Status codes to expect:
         modified (get t :modified_at nil)]
     (if t
       (cond-> (response (get t k))
-              modified (header "Last-Modified" (util/http-date modified)))
+              modified (header "Last-Modified" (util/Timestamp->http-date modified)))
       (not-found ""))))
 
 (defn- wrap-put
   [kvstore b k params headers body]
-  (let [ret (if-let [modified (tc/to-sql-date (get headers "if-unmodified-since" nil))]
-              (kv/set* kvstore b k body {:modified modified})
-              (kv/set* kvstore b k body))]
-    (condp = ret
+  (let [modified (util/http-date->Timestamp (get headers "if-unmodified-since" nil))]
+    (condp = (kv/set* kvstore b k body {:modified modified})
       :updated (response "")
       :inserted (response "")
       :rejected (-> (response "") (status 412))
