@@ -20,21 +20,34 @@ ALTER TABLE poky ALTER COLUMN modified_at SET NOT NULL;
 ALTER TABLE poky ALTER COLUMN created_at SET NOT NULL;
 
 
--- upsert tuple while ensuring that the modified timestamp is >= than the current timestamp if the record exists.
+-- upsert tuple while ensuring that the modified timestamp is >= than the current
+-- timestamp if the record exists. if the timestamp parameter is null, the
+-- tuple is inserted using a modified_at of NOW or updated leaving the existing
+-- modified_at intact.
 -- Return values:
 --  'inserted' on insert
 --  'updated' on successful update
 --  'rejected' when the modified at does not satisfy the >= condition
-CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz) RETURNS TEXT AS
+CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz DEFAULT NULL) RETURNS TEXT AS
 $$
 DECLARE
     existing_row_lock RECORD;
 BEGIN
     BEGIN
-        INSERT INTO poky (bucket, key, data, modified_at) VALUES (b, k, d, m);
+        IF (m IS NOT NULL) THEN
+            INSERT INTO poky (bucket, key, data, modified_at) VALUES (b, k, d, m);
+        ELSE
+            INSERT INTO poky (bucket, key, data) VALUES (b, k, d);
+        END IF;
+
         RETURN 'inserted';
     EXCEPTION WHEN unique_violation THEN
-        UPDATE poky SET data = d, modified_at = m WHERE key = k AND bucket = b;
+        IF (m IS NOT NULL) THEN
+            UPDATE poky SET data = d, modified_at = m WHERE key = k AND bucket = b;
+        ELSE
+            UPDATE poky SET data = d WHERE key = k AND bucket = b;
+        END IF;
+
         IF (FOUND) THEN
             RETURN 'updated';
         ELSE

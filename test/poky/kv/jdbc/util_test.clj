@@ -22,8 +22,11 @@
   (facts :integration :jdbc-set
          (jdbc-set @@S bucket "key" "value") => (contains {:result "inserted"})
          (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})
-         (jdbc-set @@S bucket "key" "value" (tc/to-sql-date (t/plus (t/now) (t/days 1)))) => (contains {:result "updated"})
-         (jdbc-set @@S bucket "key" "value" (tc/to-sql-date (t/minus (t/now) (t/days 1)))) => (contains {:result "rejected"}))
+         (jdbc-set @@S bucket "key" "value"
+                   (tc/to-sql-date (t/plus (t/now) (t/days 1)))) => (contains {:result "updated"})
+         (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})
+         (jdbc-set @@S bucket "key" "value"
+                   (tc/to-sql-date (t/now))) => (contains {:result "rejected"}))
 
   (facts :integration :jdbc-get
          (jdbc-get @@S bucket "key") => falsey

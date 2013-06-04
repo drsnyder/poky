@@ -110,14 +110,15 @@
       (doall results))))
 
 (defn jdbc-set
-  "Set a bucket b and key k to value v. Returns true on success and false on failure."
+  "Set a bucket b and key k to value v. Returns a map with key :result upon success.
+  The value at result will be one of \"inserted\", \"updated\" or \"rejected\"."
   ([conn b k v modified]
    (with-logged-connection conn
      (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, ?) AS result" b k v modified]
        (first results))))
   ([conn b k v]
    (with-logged-connection conn
-     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, NOW()) AS result" b k v]
+     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?) AS result" b k v]
        (first results)))))
 
 (defn jdbc-delete
