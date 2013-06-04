@@ -65,7 +65,13 @@
                                                                        :headers map?
                                                                        :status 500})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => false))
+         (kv/set* ..store.. ..bucket.. ..key.. ..body..) => false)
+
+       (#'http/wrap-put ..store.. ..bucket.. ..key..
+                        ..params.. {"if-unmodified-since" "bogus"} ..body..) => (contains
+                                                                                    {:body "Error in If-Unmodified-Since format. Use RFC 1123 date format."
+                                                                                     :headers map?
+                                                                                     :status 400}))
 
 
 (facts :delete
@@ -116,6 +122,13 @@
             :headers {"if-unmodified-since"
                       (tf/unparse util/rfc1123-format (t/minus (t/now) (t/days 1)))}
             :body "with-a-value"}) => (contains {:status 412})
+
+         ; Malformed If-Unmodified-Since should be rejected
+         (client/put
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-unmodified-since" "Tue, 04 Jun 2013 03:01:31 000"}
+            :body "with-a-value"}) => (contains {:status 400 :body string?})
 
          ; PUT without if-unmodified-since should be accepted
          (client/put
