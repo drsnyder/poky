@@ -42,6 +42,15 @@ function stop() {
     echo -n "Stopping poky: "
     if [[ -e $POKY_PID ]]; then
         read PID < "$POKY_PID" > /dev/null
+
+        # check if running
+        kill -0 $PID > /dev/null 2>&1
+        retval=$?
+        if [[ $retval -ne 0 ]]; then
+          echo "poky isn't running"
+          return 0
+        fi
+
         kill -TERM $PID
         retval=$?
         if [[ $retval -eq 0 ]]; then
@@ -54,7 +63,7 @@ function stop() {
         echo "poky shutdown : no pidfile"
     fi
     echo
-    
+
     return $retval
 }
 
