@@ -42,7 +42,7 @@ function stop() {
     echo -n "Stopping poky: "
     if [[ -e $POKY_PID ]]; then
         read PID < "$POKY_PID" > /dev/null
-        kill -TERM $PID
+        kill -TERM $PID > /dev/null 2>&1
         retval=$?
         if [[ $retval -eq 0 ]]; then
             sleep 3
