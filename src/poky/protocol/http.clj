@@ -12,7 +12,8 @@
             [cheshire.core :as json]
             [environ.core :refer [env]]
             [clj-time.coerce :as tc]
-            [ring.middleware.stacktrace :as trace]))
+            [ring.middleware.stacktrace :as trace]
+            [ring.middleware.statsd :as statsd]))
 
 (def ^:private default-jetty-max-threads 25)
 
@@ -109,7 +110,7 @@ Status codes to expect:
 
 (defn api
   [kvstore]
-  (let [api-routes (routes 
+  (let [api-routes (routes
                      (context "/kv" [] (kv-routes kvstore))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
@@ -123,15 +124,24 @@ Status codes to expect:
         ; this is required to make sure we handle multi-byte content responses
         ; properly
         (wrap-charset "utf-8")
-        trace/wrap-stacktrace)))
+        trace/wrap-stacktrace
+        (statsd/wrap-response-code-counter (str (env :statsd-key-base  "poky") ".resp_status")))))
 
 
 (defn start-server
   "Start the jetty http server.
   Environment:
   MAX_THREADS
+  STATSD_HOST
+  STATSD_KEY_BASE
   "
   [kvstore port]
+  (when-let [statsd-host (env :statsd-host)]
+    (let [[host port] (clojure.string/split statsd-host #":")]
+      (when (and host port)
+        (infof "Sending statsd metrics to %s" statsd-host)
+        (statsd/setup! host (Integer/parseInt port)))))
+
   (infof "Starting poky on port %d" port)
   (jetty/run-jetty (api kvstore)
                    {:port port
