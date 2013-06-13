@@ -50,6 +50,14 @@ function stop() {
     echo -n "Stopping varnishd: "
     if [[ -e $VARNISHD_PID ]]; then
         read PID < "$VARNISHD_PID" > /dev/null
+
+        kill -0 $PID 2> /dev/null
+        alive=$?
+        if [ $alive -ne 0 ]; then
+          echo "varnishd isn't running"
+          return 0
+        fi
+
         kill $PID
         retval=$?
         if [[ $retval -eq 0 ]]; then
@@ -61,7 +69,7 @@ function stop() {
         echo "varnishd shutdown : no pidfile"
     fi
     echo
-    
+
     return $retval
 }
 
@@ -78,7 +86,7 @@ case "$1" in
         stop
         start
         ;;
-    
+
     *)
         echo "Usage: $0 start|stop|restart"
         ;;
