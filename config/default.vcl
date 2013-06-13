@@ -15,7 +15,19 @@ backend poky {
   }
 }
 
+sub vcl_hash {
+
+    # if the If-Match header is supplied ensure that the resource being
+    # requested is differentiated by it's contents.
+    if (req.http.X-If-Match) {
+        hash_data(req.http.X-If-Match);
+    }
+
+}
+
 sub vcl_recv {
+    # If-Match is stripped
+    set req.http.X-If-Match = req.http.If-Match;
     set req.backend = poky;
     set req.grace = 5m;
 

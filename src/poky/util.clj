@@ -75,3 +75,9 @@
   [^:String s c]
   (when (and s c)
     (str c s c)))
+
+(defn strip-char
+  "Strip the char c from s."
+  [s c]
+  (when (and s c)
+    (clojure.string/replace s (re-pattern (str c)) "")))

@@ -8,6 +8,7 @@
             [environ.core :refer [env]]
             [clj-http.client :as client]
             [clj-time.core :as t]
+            [clj-time.coerce :as tc]
             [clj-time.format :as tf]
             [midje.util :refer [expose-testables]]
             [midje.sweet :refer :all])
