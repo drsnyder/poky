@@ -24,7 +24,7 @@ function start() {
         -p $POKY_PID $POKY $DAEMON_OPTS
     retval=$?
     sleep 10
-    
+
     # make sure the process is up
     read PID < "$POKY_PID" > /dev/null
     kill -0 $PID 2> /dev/null
@@ -43,10 +43,9 @@ function stop() {
     if [[ -e $POKY_PID ]]; then
         read PID < "$POKY_PID" > /dev/null
 
-        # check if running
-        kill -0 $PID > /dev/null 2>&1
-        retval=$?
-        if [[ $retval -ne 0 ]]; then
+        kill -0 $PID 2> /dev/null
+        alive=$?
+        if [ $alive -ne 0 ]; then
           echo "poky isn't running"
           return 0
         fi
@@ -80,7 +79,7 @@ case "$1" in
         stop
         start
         ;;
-    
+
     *)
         echo "Usage: $0 start|stop|restart"
         ;;

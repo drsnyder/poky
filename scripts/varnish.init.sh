@@ -51,10 +51,9 @@ function stop() {
     if [[ -e $VARNISHD_PID ]]; then
         read PID < "$VARNISHD_PID" > /dev/null
 
-        # check if running
-        kill -0 $PID > /dev/null 2>&1
-        retval=$?
-        if [[ $retval -ne 0 ]]; then
+        kill -0 $PID 2> /dev/null
+        alive=$?
+        if [ $alive -ne 0 ]; then
           echo "varnishd isn't running"
           return 0
         fi
@@ -87,7 +86,7 @@ case "$1" in
         stop
         start
         ;;
-    
+
     *)
         echo "Usage: $0 start|stop|restart"
         ;;
