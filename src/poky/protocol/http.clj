@@ -36,14 +36,30 @@ Status codes to expect:
 
 (def valid-key-regex #"[\d\w-_.,]+")
 
+(defn add-response-header
+  "Add a header field and value to the response object r."
+  [r field value]
+  (cond-> r
+          value (header field value)))
+
+(defn generate-etag
+  "Generate an etag given a string."
+  [^:String s]
+  (when s
+    s))
+
 (defn- wrap-get
   [kvstore b k params headers body]
-  (let [t (kv/get* kvstore b k)
-        modified (get t :modified_at nil)]
-    (if t
-      (cond-> (response (get t k))
-              modified (header "Last-Modified" (util/Timestamp->http-date modified)))
-      (not-found ""))))
+  (if-let [t (kv/get* kvstore b k)]
+    (let [modified (util/Timestamp->http-date (get t :modified_at nil))
+          if-match (get headers "if-match" nil)
+          etag (generate-etag modified)]
+      (if (or (not if-match) (= if-match etag))
+        (-> (response (get t k))
+          (add-response-header "Last-Modified" modified)
+          (add-response-header "ETag" (util/quote-string etag \")))
+        (-> (response "") (status 412))))
+    (not-found "")))
 
 (defn- wrap-put
   [kvstore b k params headers body]

@@ -68,3 +68,10 @@
   expected."
   [coll v]
   (when-first [a coll] (= a v)))
+
+
+(defn quote-string
+  "Quote a string with the character(s) c."
+  [^:String s c]
+  (when (and s c)
+    (str c s c)))
