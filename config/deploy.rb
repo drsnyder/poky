@@ -35,7 +35,8 @@ deploy_env = {}
 # see config/poky.defaults
 deploy_env['POKY_PORT']  = fetch(:poky_port, 8081); # if you change here, change in default.vcl
 deploy_env['JMX_PORT']   = fetch(:jmx_port, 9101)
-deploy_env['STATSD_HOST'] = fetch(:statsd_host, "")
+deploy_env["STATSD_HOST"] = fetch(:statsd_host, "utility002-private:8125")
+deploy_env["STATSD_KEY_BASE"] = fetch(:statsd_key_base, "poky")
 
 # see config/varnish.defaults 
 deploy_env['VARNISHD'] = fetch(:varnishd, "/usr/local/sbin/varnishd")
@@ -48,18 +49,21 @@ deploy_env['VARNISH_STORAGE_SIZE'] = fetch(:varnish_storage_size, "512M")
 desc "Deploy to the poky development environment."
 task :development do
     deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@dev.poky.huddler.com/poky_dev")
+    deploy_env["STATSD_KEY_BASE"] = "poky.dev"
     role :app, "dev.poky.huddler.com"
 end
 
 desc "Deploy to the poky qa environment."
 task :qa do
     deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@qa.poky.huddler.com/poky_qa")
+    deploy_env["STATSD_KEY_BASE"] = "poky.qa"
     role :app, "qa.poky.huddler.com"
 end
 
 desc "Deploy to the poky production environment."
 task :production do
     deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@poky.huddler.com/poky")
+    deploy_env["STATSD_KEY_BASE"] = "poky.prod"
     role :app, "poky.huddler.com"
 end
 
