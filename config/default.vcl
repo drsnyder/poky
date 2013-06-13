@@ -23,6 +23,10 @@ sub vcl_recv {
     if (req.request == "POST" || req.request == "PUT" || req.request == "DELETE") {
         ban("req.url ~ " + req.url);
     }
+
+    if (req.url ~ "^/status$") {
+        return (pass);
+    }
 }
 
 sub vcl_fetch {
