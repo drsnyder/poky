@@ -38,7 +38,7 @@ deploy_env['JMX_PORT']   = fetch(:jmx_port, 9101)
 deploy_env["STATSD_HOST"] = fetch(:statsd_host, "utility002:8125")
 deploy_env["STATSD_KEY_BASE"] = fetch(:statsd_key_base, "poky")
 
-# see config/varnish.defaults 
+# see config/varnish.defaults
 deploy_env['VARNISHD'] = fetch(:varnishd, "/usr/local/sbin/varnishd")
 deploy_env['VARNISH_LISTEN_ADDRESS'] = fetch(:varnish_listen_address, "")
 deploy_env['VARNISH_LISTEN_PORT'] = fetch(:varnish_listen_port, 8080)
@@ -65,7 +65,7 @@ task :production do
     deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@poky.huddler.com/poky")
     deploy_env["STATSD_HOST"] = "utility002-private:8125"
     deploy_env["STATSD_KEY_BASE"] = "poky.prod"
-    role :app, "poky.huddler.com"
+    role :app, "prod.poky.huddler.com"
 end
 
 
