@@ -8,6 +8,7 @@
             [environ.core :refer [env]]
             [clj-http.client :as client]
             [clj-time.core :as t]
+            [clj-time.coerce :as tc]
             [clj-time.format :as tf]
             [midje.util :refer [expose-testables]]
             [midje.sweet :refer :all])
@@ -23,19 +24,45 @@
 (def default-port 9999)
 
 (facts :get
-       (#'http/wrap-get ..store.. ..bucket.. "some-key" 
-                        ..params.. ..headers.. ..body..) => (contains {:body "some-value"
-                                                                       :headers map?
-                                                                       :status 200})
+       (#'http/wrap-get ..store.. ..bucket.. "some-key"
+           ..params.. ..headers.. ..body..) => (contains {:body "some-value"
+                                                          :headers map?
+                                                          :status 200})
        (provided
          (kv/get* ..store.. ..bucket.. "some-key") => {"some-key" "some-value" :modified_at (java.util.Date.)})
 
-       (#'http/wrap-get ..store.. ..bucket.. ..key.. 
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
-                                                                       :headers map?
-                                                                       :status 404})
+       (#'http/wrap-get ..store.. ..bucket.. ..key..
+           ..params.. ..headers.. ..body..) => (contains {:body ""
+                                                          :headers map?
+                                                          :status 404})
        (provided
-         (kv/get* ..store.. ..bucket.. ..key..) => nil))
+         (kv/get* ..store.. ..bucket.. ..key..) => nil)
+
+
+       (#'http/wrap-get ..store.. ..bucket.. ..key..
+           ..params.. {"if-match" "*"} ..body..) => (contains {:body ""
+                                                               :headers map?
+                                                               :status 412})
+       (provided
+         (kv/get* ..store.. ..bucket.. ..key..) => nil)
+
+       (let [now (t/now)
+             etag (http/generate-etag (tf/unparse util/rfc1123-format now))
+             later (t/plus now (t/days 1))]
+         (#'http/wrap-get ..store.. ..bucket.. "some-key"
+             ..params.. {"if-match" etag} ..body..) => (contains {:body "some-value"
+                                                                  :headers map?
+                                                                  :status 200})
+         (provided
+           (kv/get* ..store.. ..bucket.. "some-key") => {"some-key" "some-value" :modified_at (tc/to-timestamp now)})
+
+         (#'http/wrap-get ..store.. ..bucket.. "some-key"
+             ..params.. {"if-match" etag} ..body..) => (contains {:body ""
+                                                                  :headers map?
+                                                                  :status 412})
+         (provided
+           (kv/get* ..store.. ..bucket.. "some-key") => {"some-key" "some-value" :modified_at (tc/to-timestamp later)})))
+
 
 
 (facts :put :post
@@ -97,12 +124,53 @@
   [port b k]
   (format "http://localhost:%d/kv/%s/%s", port, bucket, k))
 
-(with-state-changes [(around :facts (do (reset! S (create-system))
-                                        (purge-bucket (kv/connection (system/store @S)) bucket)
-                                        (system/start @S default-port)
-                                        ?form
-                                        (system/stop @S)
-                                        (kv/close (system/store @S))))]
+(with-state-changes
+  [(around :facts (do (reset! S (create-system))
+                    (purge-bucket (kv/connection (system/store @S)) bucket)
+                    (system/start @S default-port)
+                    ?form
+                    (system/stop @S)
+                    (kv/close (system/store @S))))]
+
+  (facts :integration :get
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-match" "*"}}) => (contains {:status 412
+                                                      :body ""})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false}) => (contains {:status 404
+                                                    :body ""})
+
+         (let [now (t/now)
+               ts (tf/unparse util/rfc1123-format now)
+               etag (http/generate-etag ts)
+               later (t/plus now (t/days 1))
+               lateretag (http/generate-etag (tf/unparse util/rfc1123-format later))]
+           (client/put
+             (end-point-url default-port bucket "set-me")
+             {:headers {"if-unmodified-since" ts}
+              :body "with-a-value"}) => (contains {:status 200})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:headers {"if-match" etag}}) => (contains {:status 200
+                                                       :headers #(string? (get % "etag"))
+                                                       :body "with-a-value"})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")) => (contains {:status 200
+                                                                       :headers #(string? (get % "etag"))
+                                                                       :body "with-a-value"})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-match" lateretag}}) => (contains {:status 412
+                                                            :body ""})))
+
 
   (facts :integration :put
          (client/put
@@ -172,7 +240,7 @@
                         {:throw-exceptions false}) => (contains {:status 404})
          (client/post (end-point-url default-port bucket "delete-me")
                       {:body "with-a-value"}) => (contains {:status 200})
-         (client/delete (end-point-url default-port bucket "delete-me") 
+         (client/delete (end-point-url default-port bucket "delete-me")
                         {:throw-exceptions false}) => (contains {:status 200})
          (client/delete (end-point-url default-port bucket "delete-me")
                         {:throw-exceptions false}) => (contains {:status 404})))

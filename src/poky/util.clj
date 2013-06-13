@@ -68,3 +68,16 @@
   expected."
   [coll v]
   (when-first [a coll] (= a v)))
+
+
+(defn quote-string
+  "Quote a string with the character(s) c."
+  [^:String s c]
+  (when (and s c)
+    (str c s c)))
+
+(defn strip-char
+  "Strip the char c from s."
+  [s c]
+  (when (and s c)
+    (clojure.string/replace s (re-pattern (str c)) "")))

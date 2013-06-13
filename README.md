@@ -105,6 +105,17 @@ that two requests may attempt to update an object simultaneous the system can
 only guarantee that the most request request is accepted if the If-Unmodified-Since
 header is provided.
 
+For GET requests, Poky observes the If-Match header. If the If-Match header is
+supplied with the GET request and matches the `modified_at` timestamp of the
+entity being requested the operation will be performed as if the If-Match
+header did not exist. If the value supplied in the If-Match header does not
+match the `modified_at` timestamp the request will be rejected.
+
+The If-Match header should be a quoted RFC 1123 date string.
+
+In both scenarios above if the request is rejected the status code will be set
+to 412 (Precondition Failed).
+
 ## Dependencies
 
 Poky was developed and tested on PostgreSQL 9.2.
