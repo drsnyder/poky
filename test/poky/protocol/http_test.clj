@@ -38,6 +38,14 @@
        (provided
          (kv/get* ..store.. ..bucket.. ..key..) => nil)
 
+
+       (#'http/wrap-get ..store.. ..bucket.. ..key..
+           ..params.. {"if-match" "*"} ..body..) => (contains {:body ""
+                                                               :headers map?
+                                                               :status 412})
+       (provided
+         (kv/get* ..store.. ..bucket.. ..key..) => nil)
+
        (let [now (t/now)
              etag (http/generate-etag (tf/unparse util/rfc1123-format now))
              later (t/plus now (t/days 1))]
@@ -125,6 +133,17 @@
                     (kv/close (system/store @S))))]
 
   (facts :integration :get
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false
+            :headers {"if-match" "*"}}) => (contains {:status 412
+                                                      :body ""})
+
+         (client/get
+           (end-point-url default-port bucket "set-me")
+           {:throw-exceptions false}) => (contains {:status 404
+                                                    :body ""})
+
          (let [now (t/now)
                ts (tf/unparse util/rfc1123-format now)
                etag (http/generate-etag ts)

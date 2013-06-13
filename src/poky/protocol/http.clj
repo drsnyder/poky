@@ -50,18 +50,20 @@ Status codes to expect:
 
 (defn- wrap-get
   [kvstore b k params headers body]
-  (if-let [t (kv/get* kvstore b k)]
-    (let [modified (util/Timestamp->http-date (get t :modified_at nil))
-          if-match (util/strip-char (or (get headers "if-match" nil) (get headers "x-if-match" nil)) \")
-          etag (generate-etag modified)]
-      (if (or (not if-match) (= if-match etag) (= if-match "*"))
-        (-> (response (get t k))
-          (add-response-header "Last-Modified" modified)
-          (add-response-header "ETag" (util/quote-string etag \")))
-        (do
-          (warnf "GET rejected for '%s/%s' If-Match (%s) != etag (%s)" b k if-match etag)
-          (-> (response "") (status 412)))))
-    (not-found "")))
+  (let [if-match (util/strip-char (or (get headers "if-match") (get headers "x-if-match")) \")]
+    (if-let [t (kv/get* kvstore b k)]
+      (let [modified (util/Timestamp->http-date (get t :modified_at nil))
+            etag (generate-etag modified)]
+        (if (or (not if-match) (= if-match etag) (= if-match "*"))
+          (-> (response (get t k))
+            (add-response-header "Last-Modified" modified)
+            (add-response-header "ETag" (util/quote-string etag \")))
+          (do
+            (warnf "GET rejected for '%s/%s' If-Match (%s) != etag (%s)" b k if-match etag)
+            (-> (response "") (status 412)))))
+      (if (and if-match (= if-match "*"))
+        (-> (response "") (status 412))
+        (not-found "")))))
 
 (defn- wrap-put
   [kvstore b k params headers body]
@@ -75,7 +77,9 @@ Status codes to expect:
       (condp = (kv/set* kvstore b k body {:modified modified})
         :updated (response "")
         :inserted (response "")
-        :rejected (do (warnf "PUT/POST rejected for '%s/%s'" b k) (-> (response "") (status 412)))
+        :rejected (do
+                    (warnf "PUT/POST rejected for '%s/%s'" b k)
+                    (-> (response "") (status 412)))
         (-> (response "Error, PUT/POST could not be completed.") (status 500))))))
 
 (defn- wrap-delete
