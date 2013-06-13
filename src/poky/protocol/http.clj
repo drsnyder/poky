@@ -125,7 +125,7 @@ Status codes to expect:
         ; properly
         (wrap-charset "utf-8")
         trace/wrap-stacktrace
-        (statsd/wrap-response-code-counter (str (:statsd-key-base env "poky") ".resp_status")))))
+        (statsd/wrap-response-code-counter (str (env :statsd-key-base  "poky") ".resp_status")))))
 
 
 (defn start-server
@@ -136,7 +136,7 @@ Status codes to expect:
   STATSD_KEY_BASE
   "
   [kvstore port]
-  (when-let [statsd-host (:statsd-host env)]
+  (when-let [statsd-host (env :statsd-host)]
     (let [[host port] (clojure.string/split statsd-host #":")]
       (when (and host port)
         (infof "Sending statsd metrics to %s" statsd-host)
