@@ -62,7 +62,7 @@ end
 
 desc "Deploy to the poky production environment."
 task :production do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@poky.huddler.com/poky")
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@prod.poky.huddler.com/poky")
     deploy_env["STATSD_HOST"] = "utility002-private:8125"
     deploy_env["STATSD_KEY_BASE"] = "poky.prod"
     role :app, "prod.poky.huddler.com"
