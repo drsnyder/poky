@@ -44,7 +44,7 @@ deploy_env['VARNISH_LISTEN_ADDRESS'] = fetch(:varnish_listen_address, "")
 deploy_env['VARNISH_LISTEN_PORT'] = fetch(:varnish_listen_port, 8080)
 
 # amount of storage to supply to varnish in bytes. use k / M / G suffix
-deploy_env['VARNISH_STORAGE_SIZE'] = fetch(:varnish_storage_size, "512M")
+deploy_env['VARNISH_STORAGE_SIZE'] = fetch(:varnish_storage_size, "1024M")
 
 desc "Deploy to the poky development environment."
 task :development do
