@@ -69,6 +69,8 @@ Status codes to expect:
   [kvstore b k params headers body]
   (let [if-unmodified-since (get headers "if-unmodified-since" nil)
         modified (util/http-date->Timestamp if-unmodified-since)]
+    (if-not if-unmodified-since
+      (warnf "If-Unmodified-Since not provided for %s/%s" b k))
     (if (and if-unmodified-since (not modified))
       ; if If-Unmodified-Since was specified in the header, but didn't parse,
       ; reject this as a bad request.
