@@ -59,6 +59,8 @@ VARNISH_STORAGE="malloc,${VARNISH_STORAGE_SIZE}"
 # Default TTL used when the backend does not specify one
 VARNISH_TTL=120
 
+# Ban lurker sleep
+BAN_LURKER_SLEEP=0.1
 
 # The default is 50. This is how long the workerthread lingers on the session to see if a new request appears immediately.
 SESSION_LINGER=50
