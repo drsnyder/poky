@@ -128,7 +128,7 @@ Status codes to expect:
   (ANY "*" []
        (route/not-found help-message)))
 
-(defroutes status-routes 
+(defroutes status-routes
   (GET "/" []
        (response "ok")))
 
@@ -169,5 +169,5 @@ Status codes to expect:
   (infof "Starting poky on port %d" port)
   (jetty/run-jetty (api kvstore)
                    {:port port
-                    :max-threads (env :max-threads default-jetty-max-threads)
+                    :max-threads (util/parse-int (env :max-threads default-jetty-max-threads))
                     :join? false}))

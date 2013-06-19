@@ -81,3 +81,9 @@
   [s c]
   (when (and s c)
     (clojure.string/replace s (re-pattern (str c)) "")))
+
+(defn parse-int
+  [s]
+  (if (string? s)
+    (Integer/parseInt s)
+    (int s)))

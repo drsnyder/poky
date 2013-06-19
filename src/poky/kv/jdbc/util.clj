@@ -1,5 +1,6 @@
 (ns poky.kv.jdbc.util
-  (:require [clojure.java.jdbc :as sql]
+  (:require (poky [util :as util])
+            [clojure.java.jdbc :as sql]
             [clojure.string :as string]
             [clojure.tools.logging :refer [warn]]
             [environ.core :refer [env]])
@@ -47,7 +48,7 @@
 (defn create-connection
   "Create a connection and delay it."
   [dsn]
-  (delay (pool (create-db-spec dsn) :max-pool-size (env :max-pool-size default-max-pool-size))))
+  (delay (pool (create-db-spec dsn) :max-pool-size (util/parse-int (env :max-pool-size default-max-pool-size)))))
 
 (defn close-connection
   "Close the connection of a JdbcKeyValue object."
