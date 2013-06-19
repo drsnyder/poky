@@ -10,7 +10,7 @@
                  [ring/ring-core "1.1.7"]
                  [ring/ring-jetty-adapter "1.1.0"]
                  [ring-middleware-format "0.2.3"]
-                 [ring.middleware.statsd "0.1.0"]
+                 [ring.middleware.statsd "1.0.0"]
                  [compojure "1.1.3"]
                  [clj-http "0.7.2"]
                  [clj-stacktrace "0.2.5"]

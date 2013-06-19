@@ -149,6 +149,7 @@ Status codes to expect:
         ; properly
         (wrap-charset "utf-8")
         trace/wrap-stacktrace
+        (statsd/wrap-request-method-counter (str (env :statsd-key-base  "poky") ".req_method"))
         (statsd/wrap-response-code-counter (str (env :statsd-key-base  "poky") ".resp_status")))))
 
 
