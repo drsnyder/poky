@@ -34,6 +34,7 @@
   "Create a connection pool."
   [spec &{:keys [min-pool-size max-pool-size]
           :or {min-pool-size default-min-pool-size max-pool-size default-max-pool-size}}]
+  (infof "Creating pool with min %d and max %d connections." min-pool-size max-pool-size)
   (let [cpds (doto (ComboPooledDataSource.)
                (.setDriverClass (:classname spec))
                (.setJdbcUrl (str "jdbc:" (:subprotocol spec) ":" (:subname spec)))
