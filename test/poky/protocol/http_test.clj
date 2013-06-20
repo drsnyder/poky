@@ -103,14 +103,14 @@
 
 (facts :delete
        (#'http/wrap-delete ..store.. ..bucket.. ..key..
-                        ..params.. ..headers..) => (contains {:body ""
+                        ..params.. ..headers.. ..uri..) => (contains {:body ""
                                                               :headers map?
                                                               :status 200})
        (provided
          (kv/delete* ..store.. ..bucket.. ..key..) => true)
 
        (#'http/wrap-delete ..store.. ..bucket.. ..key..
-                        ..params.. ..headers..) => (contains {:body ""
+                        ..params.. ..headers.. ..uri..) => (contains {:body ""
                                                               :headers map?
                                                               :status 404})
        (provided

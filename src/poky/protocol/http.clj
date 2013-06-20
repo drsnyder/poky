@@ -108,9 +108,9 @@ Status codes to expect:
         (response-with-status "Error, PUT/POST could not be completed." 500)))))
 
 (defn- wrap-delete
-  [kvstore b k params headers]
+  [kvstore b k params headers uri]
   (if (kv/delete* kvstore b k)
-    (response "")    ; empty 200
+    (response-with-purge "" 200 uri)    ; empty 200
     (not-found ""))) ; empty 404
 
 
@@ -140,8 +140,8 @@ Status codes to expect:
                 {:keys [params body body-params headers] {:keys [b k]} :params :as request}
                 (wrap-put kvstore b k params headers (put-body body body-params) (:uri request)))
           (DELETE ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-                {:keys [params body body-params headers] {:keys [b k]} :params}
-                (wrap-delete kvstore b k params headers))
+                {:keys [params body body-params headers] {:keys [b k]} :params :as request}
+                (wrap-delete kvstore b k params headers (:uri request)))
           (GET "/help" []
                (response help-message))
           (route/not-found (str "Object not found.\n" help-message)))]
