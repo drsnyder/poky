@@ -67,35 +67,35 @@
 
 (facts :put :post
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..params.. ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :updated)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..params.. ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :inserted)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..params.. ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 412})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :rejected)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body "Error, PUT/POST could not be completed."
+                        ..params.. ..headers.. ..body.. ..uri..) => (contains {:body "Error, PUT/POST could not be completed."
                                                                        :headers map?
                                                                        :status 500})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => false)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. {"if-unmodified-since" "bogus"} ..body..) => (contains
+                        ..params.. {"if-unmodified-since" "bogus"} ..body.. ...uri...) => (contains
                                                                                     {:body "Error in If-Unmodified-Since format. Use RFC 1123 date format."
                                                                                      :headers map?
                                                                                      :status 400}))
