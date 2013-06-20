@@ -1,5 +1,3 @@
-# TODO:
-# - add probe for backend health
 backend poky {
   .host = "127.0.0.1";
   .port = "8081";               # make sure this syncs up with the deploy config
@@ -13,6 +11,11 @@ backend poky {
       .window = 5;
       .threshold = 3;
   }
+}
+
+acl purgers {
+    "127.0.0.1";
+    "10.0.0.0"/8;
 }
 
 sub vcl_hash {
@@ -31,9 +34,14 @@ sub vcl_recv {
     set req.backend = poky;
     set req.grace = 5m;
 
-    # on PUT, POST, or DELETE, we want to invalidate the given object
-    if (req.request == "POST" || req.request == "PUT" || req.request == "DELETE") {
-        ban("req.url ~ " + req.url);
+    # don't use this for hashing
+    unset req.http.Host;
+
+    if (req.request == "PURGE") {
+        if (!client.ip ~ purgers) {
+            error 405 "Method not allowed";
+        }
+        return (lookup);
     }
 
     if (req.url ~ "^/status$") {
@@ -43,6 +51,7 @@ sub vcl_recv {
 
 sub vcl_fetch {
     set beresp.grace = 5m;
+
     if (beresp.status == 200) {
         set beresp.ttl = 1h;
     }
@@ -63,5 +72,26 @@ sub vcl_deliver {
         set resp.http.X-Cache = "HIT";
     } else {
         set resp.http.X-Cache = "MISS";
+    }
+}
+
+
+sub vcl_hit {
+    if (req.request == "PURGE") {
+        purge;
+        error 200 "Purged: " + req.url;
+    }
+}
+
+sub vcl_miss {
+    if (req.request == "PURGE") {
+        purge;
+        error 404 "Not in the cache: " + req.url;
+    }
+}
+
+sub vcl_pass {
+    if (req.request == "PURGE") {
+        error 502 "PURGE on a passed object";
     }
 }

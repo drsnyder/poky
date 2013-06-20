@@ -2,6 +2,7 @@
   (:require [poky.kv.core :as kv]
             [poky.util :as util]
             [clojure.tools.logging :refer [infof warnf]]
+            [clj-logging-config.log4j :refer [set-logger!]]
             (compojure [core :refer :all]
                        [route :as route]
                        [handler :as handler])
@@ -16,6 +17,9 @@
             [ring.middleware.statsd :as statsd]))
 
 (def ^:private default-jetty-max-threads 25)
+(def ^:private default-log-level :info)
+
+(set-logger! :level (-> (env :log-level default-log-level) name clojure.string/lower-case keyword))
 
 (def ^:private help-message "
 For key-value objects, the following are supported:
@@ -48,6 +52,22 @@ Status codes to expect:
   (when s
     s))
 
+(defn response-with-status
+  [body status-code]
+  (-> (response body)
+      (status status-code)))
+
+(defn response-with-purge
+  "Also send a PURGE request to varnish if VARNISH_LISTEN_ADDRESS and VARNISH_LISTEN_PORT are
+  defined in the environment."
+  [body status-code uri]
+  (let [host (env :varnish-purge-host)
+        port (env :varnish-purge-port)]
+    (when (and uri host port)
+      (infof "purging http://%s:%s/%s" host port uri)
+      (future (util/varnish-purge host port uri))))
+  (response-with-status body status-code))
+
 (defn- wrap-get
   [kvstore b k params headers body]
   (let [if-match (util/strip-char (or (get headers "if-match") (get headers "x-if-match")) \")]
@@ -60,29 +80,32 @@ Status codes to expect:
             (add-response-header "ETag" (util/quote-string etag \")))
           (do
             (warnf "GET rejected for '%s/%s' If-Match (%s) != etag (%s)" b k if-match etag)
-            (-> (response "") (status 412)))))
+            (response-with-status "" 412))))
       (if (and if-match (= if-match "*"))
-        (-> (response "") (status 412))
+        (response-with-status "" 412)
         (not-found "")))))
 
+
+
 (defn- wrap-put
-  [kvstore b k params headers body]
+  [kvstore b k params headers body uri]
   (let [if-unmodified-since (get headers "if-unmodified-since" nil)
         modified (util/http-date->Timestamp if-unmodified-since)]
+
     (if-not if-unmodified-since
       (warnf "If-Unmodified-Since not provided for %s/%s" b k))
+
     (if (and if-unmodified-since (not modified))
       ; if If-Unmodified-Since was specified in the header, but didn't parse,
       ; reject this as a bad request.
-      (-> (response "Error in If-Unmodified-Since format. Use RFC 1123 date format.")
-          (status 400))
+      (response-with-status "Error in If-Unmodified-Since format. Use RFC 1123 date format." 400)
       (condp = (kv/set* kvstore b k body {:modified modified})
-        :updated (response "")
-        :inserted (response "")
+        :updated (response-with-purge "" 200 uri)
+        :inserted (response-with-purge "" 200 uri)
         :rejected (do
                     (warnf "PUT/POST rejected for '%s/%s'" b k)
-                    (-> (response "") (status 412)))
-        (-> (response "Error, PUT/POST could not be completed.") (status 500))))))
+                    (response-with-status "" 412))
+        (response-with-status "Error, PUT/POST could not be completed." 500)))))
 
 (defn- wrap-delete
   [kvstore b k params headers]
@@ -111,11 +134,11 @@ Status codes to expect:
                {:keys [params headers body] {:keys [b k]} :params}
                (wrap-get kvstore b k params headers body))
           (PUT ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-               {:keys [params body body-params headers] {:keys [b k]} :params}
-               (wrap-put kvstore b k params headers (put-body body body-params)))
+               {:keys [params body body-params headers] {:keys [b k]} :params :as request} 
+               (wrap-put kvstore b k params headers (put-body body body-params) (:uri request)))
           (POST ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-                {:keys [params body body-params headers] {:keys [b k]} :params}
-                (wrap-put kvstore b k params headers (put-body body body-params)))
+                {:keys [params body body-params headers] {:keys [b k]} :params :as request}
+                (wrap-put kvstore b k params headers (put-body body body-params) (:uri request)))
           (DELETE ["/:b/:k" :b valid-key-regex :k valid-key-regex]
                 {:keys [params body body-params headers] {:keys [b k]} :params}
                 (wrap-delete kvstore b k params headers))
@@ -167,8 +190,10 @@ Status codes to expect:
         (infof "Sending statsd metrics to %s" statsd-host)
         (statsd/setup! host (Integer/parseInt port)))))
 
-  (infof "Starting poky on port %d" port)
-  (jetty/run-jetty (api kvstore)
-                   {:port port
-                    :max-threads (util/parse-int (env :max-threads default-jetty-max-threads))
-                    :join? false}))
+  (let [max-threads (util/parse-int (env :max-threads default-jetty-max-threads))
+        max-pool-size (util/parse-int (env :max-pool-size -1))]
+    (infof "Starting poky on port %d with %d jetty threads and connection pool of %d." port max-threads max-pool-size)
+    (jetty/run-jetty (api kvstore)
+                     {:port port
+                      :max-threads max-threads
+                      :join? false})))
