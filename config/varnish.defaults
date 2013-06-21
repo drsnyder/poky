@@ -65,6 +65,12 @@ BAN_LURKER_SLEEP=0.1
 # The default is 50. This is how long the workerthread lingers on the session to see if a new request appears immediately.
 SESSION_LINGER=50
 
+# The default is 2. The grace period before an object moves on the LRU list.
+LRU_INTERVAL=60
+
+# The bytes of HTTP protocol workspace allocated for sessions. Default is 65k.
+SESS_WORKSPACE=524288
+
 ## 
 ##
 VARNISHD_PID=$WORKING_DIR/run/varnish.pid

@@ -1,3 +1,4 @@
+import std;
 backend poky {
   .host = "127.0.0.1";
   .port = "8081";               # make sure this syncs up with the deploy config
@@ -32,7 +33,8 @@ sub vcl_recv {
         if (!client.ip ~ purgers) {
             error 405 "Method not allowed";
         }
-        return (lookup);
+
+        ban("obj.http.x-url == " + req.url);
     }
 
     if (req.url ~ "^/status$") {
@@ -41,10 +43,12 @@ sub vcl_recv {
 }
 
 sub vcl_fetch {
+    set beresp.http.x-url = req.url;
+    set beresp.http.x-host = req.http.host;
     set beresp.grace = 5m;
 
     if (beresp.status == 200) {
-        set beresp.ttl = 1h;
+        set beresp.ttl = 4h;
     }
 
     if (beresp.status == 404) {
@@ -63,26 +67,5 @@ sub vcl_deliver {
         set resp.http.X-Cache = "HIT";
     } else {
         set resp.http.X-Cache = "MISS";
-    }
-}
-
-
-sub vcl_hit {
-    if (req.request == "PURGE") {
-        purge;
-        error 200 "Purged: " + req.url;
-    }
-}
-
-sub vcl_miss {
-    if (req.request == "PURGE") {
-        purge;
-        error 404 "Not in the cache: " + req.url;
-    }
-}
-
-sub vcl_pass {
-    if (req.request == "PURGE") {
-        error 502 "PURGE on a passed object";
     }
 }

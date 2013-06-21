@@ -69,7 +69,7 @@ Status codes to expect:
   (response-with-status body status-code))
 
 (defn- wrap-get
-  [kvstore b k params headers body]
+  [kvstore b k headers body]
   (let [if-match (util/strip-char (or (get headers "if-match") (get headers "x-if-match")) \")]
     (if-let [t (kv/get* kvstore b k)]
       (let [modified (util/Timestamp->http-date (get t :modified_at nil))
@@ -89,7 +89,7 @@ Status codes to expect:
 
 
 (defn- wrap-put
-  [kvstore b k params headers body uri]
+  [kvstore b k headers body uri]
   (let [if-unmodified-since (get headers "if-unmodified-since" nil)
         modified (util/http-date->Timestamp if-unmodified-since)]
 
@@ -109,7 +109,7 @@ Status codes to expect:
         (response-with-status "Error, PUT/POST could not be completed." 500)))))
 
 (defn- wrap-delete
-  [kvstore b k params headers uri]
+  [kvstore b k headers uri]
   (if (kv/delete* kvstore b k)
     (response-with-purge "" 200 uri)    ; empty 200
     (not-found ""))) ; empty 404
@@ -132,17 +132,17 @@ Status codes to expect:
   (let [kv-api-routes
         (routes
           (GET ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-               {:keys [params headers body] {:keys [b k]} :params}
-               (wrap-get kvstore b k params headers body))
+               {:keys [headers body] {:keys [b k]} :params}
+               (wrap-get kvstore b k headers body))
           (PUT ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-               {:keys [params body body-params headers] {:keys [b k]} :params :as request} 
-               (wrap-put kvstore b k params headers (put-body body body-params) (:uri request)))
+               {:keys [body body-params headers uri] {:keys [b k]} :params}
+               (wrap-put kvstore b k headers (put-body body body-params) uri))
           (POST ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-                {:keys [params body body-params headers] {:keys [b k]} :params :as request}
-                (wrap-put kvstore b k params headers (put-body body body-params) (:uri request)))
+                {:keys [body body-params headers uri] {:keys [b k]} :params}
+                (wrap-put kvstore b k headers (put-body body body-params) uri))
           (DELETE ["/:b/:k" :b valid-key-regex :k valid-key-regex]
-                {:keys [params body body-params headers] {:keys [b k]} :params :as request}
-                (wrap-delete kvstore b k params headers (:uri request)))
+                {:keys [body headers] {:keys [b k]} :params :as request}
+                (wrap-delete kvstore b k headers (:uri request)))
           (GET "/help" []
                (response help-message))
           (route/not-found (str "Object not found.\n" help-message)))]
