@@ -102,7 +102,7 @@ Status codes to expect:
       (response-with-status "Error in If-Unmodified-Since format. Use RFC 1123 date format." 400)
       (condp = (kv/set* kvstore b k body {:modified modified})
         :updated (response-with-purge "" 200 uri)
-        :inserted (response-with-purge "" 200 uri)
+        :inserted (response-with-status "" 200) ; no need to purge on insert
         :rejected (do
                     (warnf "PUT/POST rejected for '%s/%s'" b k)
                     (response-with-status "" 412))
