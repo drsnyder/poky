@@ -77,7 +77,6 @@ Status codes to expect:
         (if (or (not if-match) (= if-match etag) (= if-match "*"))
           (-> (response (get t k))
             (add-response-header "Last-Modified" modified)
-            (add-response-header "Vary" "If-Match") ; this ensures we can purge and match hits with and without If-Match
             (add-response-header "ETag" (util/quote-string etag \")))
           (do
             (warnf "GET rejected for '%s/%s' If-Match (%s) != etag (%s)" b k if-match etag)
