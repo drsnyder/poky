@@ -34,7 +34,7 @@ sub vcl_recv {
             error 405 "Method not allowed";
         }
 
-        ban("obj.http.x-url == " + req.url);
+        return (lookup);
     }
 
     if (req.url ~ "^/status$") {
@@ -52,13 +52,15 @@ sub vcl_fetch {
     }
 
     if (beresp.status == 404) {
+        # we want to bypass the default hit_for_pass object so we can get HITs on this immediately
+        # if it's updated. otherwise, we will encounter misses for 120s
         set beresp.ttl = 0s;
+        return (deliver);
     }
 
     if (beresp.status >= 500) {
         set beresp.ttl = 0s;
     }
-
 }
 
 sub vcl_deliver {
@@ -68,4 +70,24 @@ sub vcl_deliver {
     } else {
         set resp.http.X-Cache = "MISS";
     }
+}
+
+sub vcl_hit {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged.";
+        }
+}
+
+sub vcl_miss {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged.";
+        }
+}
+
+sub vcl_pass {
+        if (req.request == "PURGE") {
+                error 503 "Shouldn't get to (pass) on PURGE.";
+        }
 }

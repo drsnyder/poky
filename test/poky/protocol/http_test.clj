@@ -275,6 +275,7 @@
                                                                                  :headers #(= (get % "x-cache") "HIT") :body "with-a-value"})
 
            (client/delete test-uri {:throw-exceptions false}) => (contains {:status 200})
+           (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
            (client/get test-uri {:throw-exceptions false :headers {"if-match" http-date}}) => (contains {:status 404})
 
 
@@ -292,7 +293,9 @@
                  (client/get iuri {:headers {"if-match" http-date}}) => (contains {:status 200
                                                                                    :headers #(= (get % "x-cache") "HIT") :body "with-a-value"})
 
+                 ; both forms should be purged on delete
                  (client/delete iuri {:throw-exceptions false}) => (contains {:status 200})
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 404})
                  (client/get iuri {:throw-exceptions false :headers {"if-match" http-date}}) => (contains {:status 404}))))
            )
 

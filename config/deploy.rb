@@ -70,7 +70,7 @@ task :production do
     deploy_env["STATSD_HOST"] = "utility002-private:8125"
     deploy_env["STATSD_KEY_BASE"] = "poky.prod"
     deploy_env["VARNISH_STORAGE_SIZE"] = "1024M"
-    deploy_env["VARNISH_MAX_THREADS"] = "2500"
+    deploy_env["VARNISH_MAX_THREADS"] = "2000"
     deploy_env["VARNISH_THREAD_POOLS"] = "8"
     role :app, "prod.poky.huddler.com"
 end
