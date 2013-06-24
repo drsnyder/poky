@@ -270,7 +270,11 @@
            (client/get test-uri) => (contains {:status 200 :headers #(= (get % "x-cache") "HIT") :body "with-a-value"}) 
 
            (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200 
-                                                                                 :headers #(= (get % "x-cache") "HIT") :body "with-a-value"})
+                                                                                 :headers #(= (get % "x-cache") "MISS")
+                                                                                 :body "with-a-value"})
+           (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "HIT")
+                                                                                 :body "with-a-value"})
 
            (client/delete test-uri {:throw-exceptions false}) => (contains {:status 200})
            (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
@@ -278,18 +282,25 @@
 
 
            (dorun
-             (for [i (range 0 1000)
+             (for [i (range 0 100)
                    :let [iuri (end-point-url varnish-port bucket (format "set-me-%d" i) :host varnish-host)]]
                (do
                  (client/delete iuri {:throw-exceptions false})
                  (client/get iuri {:throw-exceptions false}) => (contains {:status 404})
-                 (client/post iuri {:body "with-a-value"
+                 (client/post iuri {:body (str "with-a-value-" i)
                                     :headers {"if-unmodified-since" http-date}}) => (contains {:status 200})
 
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 200
+                                                                           :headers #(= (get % "x-cache") "MISS")})
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 200
+                                                                           :headers #(= (get % "x-cache") "HIT")})
+
                  (client/get iuri {:headers {"If-Match" http-date}}) => (contains {:status 200
-                                                                                   :headers #(= (get % "x-cache") "MISS") :body "with-a-value"})
+                                                                                   :headers #(= (get % "x-cache") "MISS")
+                                                                                   :body (str "with-a-value-" i)})
                  (client/get iuri {:headers {"If-Match" http-date}}) => (contains {:status 200
-                                                                                   :headers #(= (get % "x-cache") "HIT") :body "with-a-value"})
+                                                                                   :headers #(= (get % "x-cache") "HIT")
+                                                                                   :body (str "with-a-value-" i)})
 
                  ; both forms should be purged on delete
                  (client/delete iuri {:throw-exceptions false}) => (contains {:status 200})
