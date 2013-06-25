@@ -156,7 +156,7 @@ Status codes to expect:
   (GET "/" []
        (response "ok")))
 
-;; ======== QUERY
+;; ======== MULTI
 
 (defn- multi-get
   [kvstore b body]
@@ -166,7 +166,7 @@ Status codes to expect:
         params (map cast-ts body)]
     (kv/mget* kvstore b nil params)))
 
-(defn query-routes
+(defn multi-routes
   [kvstore]
   (routes
     (POST ["/:b" :b valid-key-regex]
@@ -193,7 +193,7 @@ Status codes to expect:
   [kvstore]
   (let [api-routes (routes
                      (context "/kv" [] (kv-routes kvstore))
-                     (context "/query" [] (query-routes kvstore))
+                     (context "/multi" [] (multi-routes kvstore))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
     (-> (handler/api api-routes)
