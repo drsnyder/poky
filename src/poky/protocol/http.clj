@@ -156,10 +156,45 @@ Status codes to expect:
   (GET "/" []
        (response "ok")))
 
+;; ======== QUERY
+
+(defn- multi-get
+  [kvstore b body]
+  ;; TODO better sanitize body (null values)
+  (let [ts-cols #{"modified_at" "created_at"}
+        cast-ts #(into {} (for [[k v] %] [k (if (ts-cols k) (util/http-date->Timestamp v) v)]))
+        params (map cast-ts body)]
+    (println params)
+    (kv/mget* kvstore b nil params)))
+
+(defn query-routes
+  [kvstore]
+  (routes
+    (POST ["/:b" :b valid-key-regex]
+          {:keys [params headers body] {:keys [b]} :params}
+          (if (not= (get headers "content-type") "application/json")
+            (-> (response "Invalid Content-Type") (status 415))
+            (try
+              (let [json-body (json/parse-string (slurp body))
+                    result (multi-get kvstore b json-body)]
+                (response (json/generate-string result)))
+              (catch com.fasterxml.jackson.core.JsonParseException e
+                (-> (response "Failed to parse JSON body") (status 400)))
+              (catch com.fasterxml.jackson.core.JsonGenerationException e
+                (-> (response "Failed to build JSON response") (status 500))))))
+    ;(PUT ["/:b" :b valid-key-regex]
+    ;{})
+    ;(DELETE ["/:b" :b valid-key-regex]
+    ;{})
+    ))
+
+;; ========
+
 (defn api
   [kvstore]
   (let [api-routes (routes
                      (context "/kv" [] (kv-routes kvstore))
+                     (context "/query" [] (query-routes kvstore))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
     (-> (handler/api api-routes)

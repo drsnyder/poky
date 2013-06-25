@@ -4,6 +4,7 @@
                  [org.clojure/tools.cli "0.2.2"]
                  [postgresql/postgresql "9.0-801.jdbc4"]
                  [org.clojure/java.jdbc "0.2.3"]
+                 [cheshire "5.2.0"]
                  [c3p0/c3p0 "0.9.1.2"]
                  [clj-logging-config "1.9.10"]
                  [org.clojure/tools.logging "0.2.6"]

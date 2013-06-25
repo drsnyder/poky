@@ -18,7 +18,8 @@
     (when-let [row (jdbc-get @conn b k)]
       {(:key row) (:data row) :modified_at (:modified_at row)}))
   (mget* [this b ks params]
-    (mget* this b ks))
+    (into {} (map (juxt :key :data)
+                  (jdbc-mget-param @conn b params))))
   (mget* [this b ks]
     (into {} (map (juxt :key :data) (jdbc-mget @conn b ks))))
   (set* [this b k value]

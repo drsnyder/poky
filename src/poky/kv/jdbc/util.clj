@@ -111,6 +111,42 @@
                    ks))
       (doall results))))
 
+(defn- product-query-and-vals
+  "Returns list where first element is parameterized query predicate and remaining
+  elements are values for predicate.
+  Each key is mapped against cols with (cols key).
+  Entries with keys that doesn't map to a truthy value are excluded (ie sanitization).
+  TODO: Add ability to specify comparison operator"
+  [m cols]
+  (let [xs (for [[k v] m :let [col (cols k)] :when col] [(str col "=?") v])]
+    (cons (string/join " AND " (map first xs))
+          (mapcat rest xs))))
+
+(defn- sum-of-prods-condition
+  "Creates a 'sum-of-products' parameterized query condition from products, where
+  each element in in products in a map from columns to vals that should match a
+  single row when all are AND'ed together. Product queries is OR'ed together to
+  form the query partial.
+  Retuns a tuple of [query-partial query-partial-params]"
+  [products cols]
+  (let [xs (map #(product-query-and-vals % cols) products)]
+    [(string/join " OR " (map #(str "(" (first %) ")") xs))
+     (mapcat rest xs)]))
+
+;; TODO Should we truncate timestamps on write (and with migration)?
+(def ^:private mget-cols {"bucket" "bucket"
+                          "key" "key"
+                          "modified_at" "date_trunc('seconds', modified_at)"
+                          "created_at" "date_trunc('seconds', created_at)"})
+(defn jdbc-mget-param
+  [conn bucket params]
+  (with-logged-connection conn
+    (sql/with-query-results results
+      (let [[sop-cond sop-params] (sum-of-prods-condition params mget-cols)
+            query (str "SELECT * FROM poky WHERE bucket=? AND (" sop-cond ")")]
+        (apply vector query bucket sop-params))
+      (doall results))))
+
 (defn jdbc-set
   "Set a bucket b and key k to value v. Returns a map with key :result upon success.
   The value at result will be one of \"inserted\", \"updated\" or \"rejected\"."
