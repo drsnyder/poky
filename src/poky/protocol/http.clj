@@ -87,7 +87,6 @@ Status codes to expect:
         (not-found "")))))
 
 
-
 (defn- wrap-put
   [kvstore b k headers body uri]
   (let [if-unmodified-since (get headers "if-unmodified-since" nil)
@@ -161,10 +160,10 @@ Status codes to expect:
 (defn- multi-get
   [kvstore b body]
   ;; TODO better sanitize body (null values)
-  (let [ts-cols #{"modified_at" "created_at"}
+  (let [ts-cols #{:modified_at :created_at}
         cast-ts #(into {} (for [[k v] %] [k (if (ts-cols k) (util/http-date->Timestamp v) v)]))
         params (map cast-ts body)]
-    (kv/mget* kvstore b nil params)))
+    (kv/mget* kvstore b params)))
 
 (defn multi-routes
   [kvstore]
@@ -174,7 +173,7 @@ Status codes to expect:
           (if (not= (get headers "content-type") "application/json")
             (-> (response "Invalid Content-Type") (status 415))
             (try
-              (let [json-body (json/parse-string (slurp body))
+              (let [json-body (json/parse-string (slurp body) true)
                     result (multi-get kvstore b json-body)]
                 (response (json/generate-string result)))
               (catch com.fasterxml.jackson.core.JsonParseException e

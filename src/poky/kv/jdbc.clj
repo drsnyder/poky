@@ -6,6 +6,7 @@
             [clojure.java.jdbc :as sql]
             [clojure.string :as string])
   (:import [poky.kv.core.KeyValue]
+           [poky.kv.core.KeyValueMulti]
            [poky.kv.core.Connection]))
 
 (declare get-connection)
@@ -17,11 +18,6 @@
   (get* [this b k]
     (when-let [row (jdbc-get @conn b k)]
       {(:key row) (:data row) :modified_at (:modified_at row)}))
-  (mget* [this b ks params]
-    (into {} (map (juxt :key :data)
-                  (jdbc-mget-param @conn b params))))
-  (mget* [this b ks]
-    (into {} (map (juxt :key :data) (jdbc-mget @conn b ks))))
   (set* [this b k value]
     (set* this b k value {}))
   (set* [this b k value params]
@@ -29,6 +25,16 @@
       (keyword (:result ret))))
   (delete* [this b k]
     (util/first= (jdbc-delete @conn b k) 1))
+
+  KeyValueMulti
+  (mget* [this b conds]
+    (into {} (map (juxt :key :data) (jdbc-mget @conn b conds))))
+  (mset* [this b data]
+    ;; do sequentually. TODO set in single query
+    (doall (map #(when-let [k (:key %)] (set* this b k %)) data)))
+  (mdelete* [this b conds]
+    ;; do sequentually. TODO set in single query
+    (doall (map #(when-let [k (:key %)] (delete* this b k)) conds)))
 
   Connection
   (connection [this]

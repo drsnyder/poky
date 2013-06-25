@@ -100,16 +100,27 @@
       ["SELECT * FROM poky WHERE bucket=? AND key=?" b k]
       (first results))))
 
-(defn jdbc-mget
-  "Deprecated."
-  [conn b ks]
+(defn jdbc-set
+  "Set a bucket b and key k to value v. Returns a map with key :result upon success.
+  The value at result will be one of \"inserted\", \"updated\" or \"rejected\"."
+  ([conn b k v modified]
+   (with-logged-connection conn
+     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, ?) AS result" b k v modified]
+       (first results))))
+  ([conn b k v]
+   (with-logged-connection conn
+     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?) AS result" b k v]
+       (first results)))))
+
+(defn jdbc-delete
+  "Delete the value at bucket b and key k. Returns true on success and false if the
+  tuple does not exist."
+  [conn b k]
   (with-logged-connection conn
-    (sql/with-query-results results
-      (vec (concat [(format "SELECT * FROM poky WHERE bucket=? AND key IN (%s)"
-                            (string/join "," (repeat (count ks) "?")))
-                    b]
-                   ks))
-      (doall results))))
+    (sql/delete-rows "poky"
+       ["bucket=? AND key=?" b k])))
+
+;; ======== MULTI
 
 (defn- product-query-and-vals
   "Returns list where first element is parameterized query predicate and remaining
@@ -134,35 +145,15 @@
      (mapcat rest xs)]))
 
 ;; TODO Should we truncate timestamps on write (and with migration)?
-(def ^:private mget-cols {"bucket" "bucket"
-                          "key" "key"
-                          "modified_at" "date_trunc('seconds', modified_at)"
-                          "created_at" "date_trunc('seconds', created_at)"})
-(defn jdbc-mget-param
-  [conn bucket params]
-  (with-logged-connection conn
-    (sql/with-query-results results
-      (let [[sop-cond sop-params] (sum-of-prods-condition params mget-cols)
-            query (str "SELECT * FROM poky WHERE bucket=? AND (" sop-cond ")")]
-        (apply vector query bucket sop-params))
-      (doall results))))
-
-(defn jdbc-set
-  "Set a bucket b and key k to value v. Returns a map with key :result upon success.
-  The value at result will be one of \"inserted\", \"updated\" or \"rejected\"."
-  ([conn b k v modified]
-   (with-logged-connection conn
-     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?, ?) AS result" b k v modified]
-       (first results))))
-  ([conn b k v]
-   (with-logged-connection conn
-     (sql/with-query-results results ["SELECT upsert_kv_data(?, ?, ?) AS result" b k v]
-       (first results)))))
-
-(defn jdbc-delete
-  "Delete the value at bucket b and key k. Returns true on success and false if the
-  tuple does not exist."
-  [conn b k]
-  (with-logged-connection conn
-    (sql/delete-rows "poky"
-       ["bucket=? AND key=?" b k])))
+(def ^:private mget-cols {:bucket "bucket"
+                          :key "key"
+                          :modified_at "date_trunc('seconds', modified_at)"
+                          :created_at "date_trunc('seconds', created_at)"})
+(defn jdbc-mget
+  [conn bucket conds]
+  (let [[sop-cond sop-params] (sum-of-prods-condition conds mget-cols) ]
+    (if-not (string/blank? sop-cond)
+      (let [query (str "SELECT * FROM poky WHERE bucket=? AND (" sop-cond ")")]
+        (with-logged-connection conn
+          (sql/with-query-results results (apply vector query bucket sop-params)
+            (doall results)))))))
