@@ -31,7 +31,9 @@
     (into {} (map (juxt :key :data) (jdbc-mget @conn b conds))))
   (mset* [this b data]
     ;; do sequentually. TODO set in single query
-    (doall (map #(when-let [k (:key %)] (set* this b k %)) data)))
+    (doall (map (fn [{k :key value :data :as params}]
+                  (when k (set* this b k value params)))
+                data)))
   (mdelete* [this b conds]
     ;; do sequentually. TODO set in single query
     (doall (map #(when-let [k (:key %)] (delete* this b k)) conds)))

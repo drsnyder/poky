@@ -1,0 +1,5 @@
+[
+  {"key": "test.one", "data":"test.one data"},
+  {"key": "test.two", "data":"test.two data"},
+  {"key": "test.three", "data":"test.three data", "modified_at":"Fri, 18 Mar 1988 12:00:00 GMT"}
+]
