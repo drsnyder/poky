@@ -29,6 +29,16 @@ For key-value objects, the following are supported:
   - DELETE /kv/:bucket/:key | deletes object
   - GET    /kv/:bucket/:key | returns object
 
+For dealing with batches of objects, the following are supported:
+  - POST   /multi/:bucket | returns objects
+  - PUT    /multi/:bucket | creates objects
+  - DELETE /multi/:bucket | deletes objects
+
+  * Request body should be JSON encoded array of objects.
+  * Request's Content-Type header must be JSON MIME type.
+  * Responses are JSON encoded
+  * Rejected gets/sets are not currently reported
+
 Other:
   - GET /status | returns 'ok' and status 200
 
