@@ -164,7 +164,6 @@ Status codes to expect:
   (let [ts-cols #{"modified_at" "created_at"}
         cast-ts #(into {} (for [[k v] %] [k (if (ts-cols k) (util/http-date->Timestamp v) v)]))
         params (map cast-ts body)]
-    (println params)
     (kv/mget* kvstore b nil params)))
 
 (defn query-routes
