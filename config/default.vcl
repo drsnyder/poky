@@ -26,9 +26,6 @@ sub vcl_recv {
     set req.backend = poky;
     set req.grace = 5m;
 
-    # don't use this for hashing. we only have one
-    unset req.http.Host;
-
     if (req.request == "PURGE") {
         if (!client.ip ~ purgers) {
             error 405 "Method not allowed";
@@ -41,6 +38,14 @@ sub vcl_recv {
         return (pass);
     }
 }
+
+sub vcl_hash {
+    # we only ever need to hash on the req.url since there is only one
+    # host/server.
+    hash_data(req.url);
+    return (hash);
+}
+
 
 sub vcl_fetch {
     set beresp.http.x-url = req.url;

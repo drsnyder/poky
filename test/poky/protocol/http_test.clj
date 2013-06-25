@@ -256,6 +256,7 @@
                varnish-port (util/parse-int (env :varnish-integration-port))
                now (t/now)
                http-date (tf/unparse util/rfc1123-format (t/now))
+               http-date-future (tf/unparse util/rfc1123-format (t/plus now (t/days 1)))
                test-uri (end-point-url varnish-port bucket "set-me" :host varnish-host)]
            (prn test-uri)
 
@@ -263,11 +264,16 @@
 
            (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
 
-           (client/post test-uri {:body "with-a-value" :headers {"if-unmodified-since" http-date}}) => (contains {:status 200})
+           (client/post test-uri {:body "with-a-value"
+                                  :headers {"if-unmodified-since" http-date}}) => (contains {:status 200})
 
            ;; no If-Match; both of these should delete below
-           (client/get test-uri) => (contains {:status 200 :headers #(= (get % "x-cache") "MISS") :body "with-a-value"})
-           (client/get test-uri) => (contains {:status 200 :headers #(= (get % "x-cache") "HIT") :body "with-a-value"}) 
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "MISS")
+                                               :body "with-a-value"})
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "HIT")
+                                               :body "with-a-value"})
 
            (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200 
                                                                                  :headers #(= (get % "x-cache") "MISS")
@@ -275,6 +281,25 @@
            (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200
                                                                                  :headers #(= (get % "x-cache") "HIT")
                                                                                  :body "with-a-value"})
+
+           ;; make an edit and repeat
+           (client/post test-uri {:body "with-a-value-edit"
+                                  :headers {"if-unmodified-since" http-date-future}}) => (contains {:status 200})
+
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "MISS")
+                                               :body "with-a-value-edit"})
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "HIT")
+                                               :body "with-a-value-edit"})
+
+           (client/get test-uri {:headers {"If-Match" http-date-future}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "MISS")
+                                                                                 :body "with-a-value-edit"})
+           (client/get test-uri {:headers {"If-Match" http-date-future}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "HIT")
+                                                                                 :body "with-a-value-edit"})
+
 
            (client/delete test-uri {:throw-exceptions false}) => (contains {:status 200})
            (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
