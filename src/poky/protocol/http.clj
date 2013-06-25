@@ -209,9 +209,10 @@ Status codes to expect:
     (PUT ["/:b" :b valid-key-regex]
          request
          (multi-handler kvstore multi-set request))
-    ;(DELETE ["/:b" :b valid-key-regex]
-    ;{})
-    ))
+    (DELETE ["/:b" :b valid-key-regex]
+            request
+            (-> (response "Multi-delete not supported yet")
+                (status 501)))))
 
 ;; ========
 
