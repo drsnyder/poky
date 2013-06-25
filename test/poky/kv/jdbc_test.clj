@@ -71,7 +71,7 @@
          (kv/set* @S bucket "key" "value") => :inserted
 
          (kv/set* @S bucket "key" "value") => :updated
-         (kv/set* @S bucket "key" "value" {:modified
+         (kv/set* @S bucket "key" "value" {:modified_at
                                            (tc/to-sql-date
                                              (t/minus (t/now) (t/days 1)))}) => :rejected)
 

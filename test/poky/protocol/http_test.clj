@@ -71,28 +71,28 @@
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :updated)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified_at nil}) => :updated)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :inserted)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified_at nil}) => :inserted)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 412})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :rejected)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified_at nil}) => :rejected)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         ..headers.. ..body.. ..uri..) => (contains {:body "Error, PUT/POST could not be completed."
                                                                        :headers map?
                                                                        :status 500})
        (provided
-         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => false)
+         (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified_at nil}) => false)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
                         {"if-unmodified-since" "bogus"} ..body.. ...uri...) => (contains

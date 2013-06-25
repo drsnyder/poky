@@ -99,7 +99,7 @@ Status codes to expect:
       ; if If-Unmodified-Since was specified in the header, but didn't parse,
       ; reject this as a bad request.
       (response-with-status "Error in If-Unmodified-Since format. Use RFC 1123 date format." 400)
-      (condp = (kv/set* kvstore b k body {:modified modified})
+      (condp = (kv/set* kvstore b k body {:modified_at modified})
         :updated (response-with-purge "" 200 uri)
         :inserted (response-with-status "" 200) ; no need to purge on insert
         :rejected (do
