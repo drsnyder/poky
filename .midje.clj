@@ -1,1 +1,1 @@
-(change-defaults :fact-filter (complement :integration))
+(change-defaults :fact-filter #(not (or (:varnish %) (:integration %))))

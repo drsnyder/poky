@@ -20,6 +20,8 @@ DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
              -p thread_pool_add_delay=${VARNISH_THREAD_POOL_ADD_DELAY} \
              -p listen_depth=${VARNISH_LISTEN_DEPTH} \
              -p ban_lurker_sleep=${BAN_LURKER_SLEEP} \
+             -p lru_interval=${LRU_INTERVAL} \
+             -p sess_workspace=${SESS_WORKSPACE} \
              -P $VARNISHD_PID \
              -n $WORKING_DIR/run/"
 

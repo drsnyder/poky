@@ -25,14 +25,14 @@
 
 (facts :get
        (#'http/wrap-get ..store.. ..bucket.. "some-key"
-           ..params.. ..headers.. ..body..) => (contains {:body "some-value"
+           ..headers.. ..body..) => (contains {:body "some-value"
                                                           :headers map?
                                                           :status 200})
        (provided
          (kv/get* ..store.. ..bucket.. "some-key") => {"some-key" "some-value" :modified_at (java.util.Date.)})
 
        (#'http/wrap-get ..store.. ..bucket.. ..key..
-           ..params.. ..headers.. ..body..) => (contains {:body ""
+           ..headers.. ..body..) => (contains {:body ""
                                                           :headers map?
                                                           :status 404})
        (provided
@@ -40,7 +40,7 @@
 
 
        (#'http/wrap-get ..store.. ..bucket.. ..key..
-           ..params.. {"if-match" "*"} ..body..) => (contains {:body ""
+           {"if-match" "*"} ..body..) => (contains {:body ""
                                                                :headers map?
                                                                :status 412})
        (provided
@@ -50,14 +50,14 @@
              etag (http/generate-etag (tf/unparse util/rfc1123-format now))
              later (t/plus now (t/days 1))]
          (#'http/wrap-get ..store.. ..bucket.. "some-key"
-             ..params.. {"if-match" etag} ..body..) => (contains {:body "some-value"
+             {"if-match" etag} ..body..) => (contains {:body "some-value"
                                                                   :headers map?
                                                                   :status 200})
          (provided
            (kv/get* ..store.. ..bucket.. "some-key") => {"some-key" "some-value" :modified_at (tc/to-timestamp now)})
 
          (#'http/wrap-get ..store.. ..bucket.. "some-key"
-             ..params.. {"if-match" etag} ..body..) => (contains {:body ""
+             {"if-match" etag} ..body..) => (contains {:body ""
                                                                   :headers map?
                                                                   :status 412})
          (provided
@@ -67,35 +67,35 @@
 
 (facts :put :post
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :updated)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 200})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :inserted)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body ""
+                        ..headers.. ..body.. ..uri..) => (contains {:body ""
                                                                        :headers map?
                                                                        :status 412})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => :rejected)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. ..headers.. ..body..) => (contains {:body "Error, PUT/POST could not be completed."
+                        ..headers.. ..body.. ..uri..) => (contains {:body "Error, PUT/POST could not be completed."
                                                                        :headers map?
                                                                        :status 500})
        (provided
          (kv/set* ..store.. ..bucket.. ..key.. ..body.. {:modified nil}) => false)
 
        (#'http/wrap-put ..store.. ..bucket.. ..key..
-                        ..params.. {"if-unmodified-since" "bogus"} ..body..) => (contains
+                        {"if-unmodified-since" "bogus"} ..body.. ...uri...) => (contains
                                                                                     {:body "Error in If-Unmodified-Since format. Use RFC 1123 date format."
                                                                                      :headers map?
                                                                                      :status 400}))
@@ -103,14 +103,14 @@
 
 (facts :delete
        (#'http/wrap-delete ..store.. ..bucket.. ..key..
-                        ..params.. ..headers..) => (contains {:body ""
+                        ..headers.. ..uri..) => (contains {:body ""
                                                               :headers map?
                                                               :status 200})
        (provided
          (kv/delete* ..store.. ..bucket.. ..key..) => true)
 
        (#'http/wrap-delete ..store.. ..bucket.. ..key..
-                        ..params.. ..headers..) => (contains {:body ""
+                        ..headers.. ..uri..) => (contains {:body ""
                                                               :headers map?
                                                               :status 404})
        (provided
@@ -121,8 +121,9 @@
   (when-let [dsn (env :database-url)] (system/create-system (kv.jdbc/create dsn) #'http/start-server)))
 
 (defn end-point-url
-  [port b k]
-  (format "http://localhost:%d/kv/%s/%s", port, bucket, k))
+  [port b k &{:keys [host] :or {host "localhost"}}]
+  (format "http://%s:%d/kv/%s/%s", host port, bucket, k))
+
 
 (with-state-changes
   [(around :facts (do (reset! S (create-system))
@@ -136,7 +137,7 @@
          (client/get
            (end-point-url default-port bucket "set-me")
            {:throw-exceptions false
-            :headers {"if-match" "*"}}) => (contains {:status 412
+            :headers {"If-Match" "*"}}) => (contains {:status 412
                                                       :body ""})
 
          (client/get
@@ -156,7 +157,7 @@
 
          (client/get
            (end-point-url default-port bucket "set-me")
-           {:headers {"if-match" etag}}) => (contains {:status 200
+           {:headers {"If-Match" etag}}) => (contains {:status 200
                                                        :headers #(string? (get % "etag"))
                                                        :body "with-a-value"})
 
@@ -168,9 +169,8 @@
          (client/get
            (end-point-url default-port bucket "set-me")
            {:throw-exceptions false
-            :headers {"if-match" lateretag}}) => (contains {:status 412
+            :headers {"If-Match" lateretag}}) => (contains {:status 412
                                                             :body ""})))
-
 
   (facts :integration :put
          (client/put
@@ -244,3 +244,95 @@
                         {:throw-exceptions false}) => (contains {:status 200})
          (client/delete (end-point-url default-port bucket "delete-me")
                         {:throw-exceptions false}) => (contains {:status 404})))
+
+
+(defn purge
+  [host port b k]
+  (util/varnish-purge host port (format "/kv/%s/%s" b k)))
+
+(facts :integration :varnish :get
+       (if (and (env :varnish-integration-host) (env :varnish-integration-port))
+         (let [varnish-host (env :varnish-integration-host)
+               varnish-port (util/parse-int (env :varnish-integration-port))
+               now (t/now)
+               http-date (tf/unparse util/rfc1123-format (t/now))
+               http-date-future (tf/unparse util/rfc1123-format (t/plus now (t/days 1)))
+               test-uri (end-point-url varnish-port bucket "set-me" :host varnish-host)]
+           (prn test-uri)
+
+           (client/delete test-uri {:throw-exceptions false}) 
+
+           (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
+
+           (client/post test-uri {:body "with-a-value"
+                                  :headers {"if-unmodified-since" http-date}}) => (contains {:status 200})
+
+           ;; no If-Match; both of these should delete below
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "MISS")
+                                               :body "with-a-value"})
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "HIT")
+                                               :body "with-a-value"})
+
+           (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200 
+                                                                                 :headers #(= (get % "x-cache") "MISS")
+                                                                                 :body "with-a-value"})
+           (client/get test-uri {:headers {"If-Match" http-date}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "HIT")
+                                                                                 :body "with-a-value"})
+
+           ;; make an edit and repeat
+           (client/post test-uri {:body "with-a-value-edit"
+                                  :headers {"if-unmodified-since" http-date-future}}) => (contains {:status 200})
+
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "MISS")
+                                               :body "with-a-value-edit"})
+           (client/get test-uri) => (contains {:status 200
+                                               :headers #(= (get % "x-cache") "HIT")
+                                               :body "with-a-value-edit"})
+
+           (client/get test-uri {:headers {"If-Match" http-date-future}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "MISS")
+                                                                                 :body "with-a-value-edit"})
+           (client/get test-uri {:headers {"If-Match" http-date-future}}) => (contains {:status 200
+                                                                                 :headers #(= (get % "x-cache") "HIT")
+                                                                                 :body "with-a-value-edit"})
+
+
+           (client/delete test-uri {:throw-exceptions false}) => (contains {:status 200})
+           (client/get test-uri {:throw-exceptions false}) => (contains {:status 404})
+           (client/get test-uri {:throw-exceptions false :headers {"If-Match" http-date}}) => (contains {:status 404})
+
+
+           (dorun
+             (for [i (range 0 100)
+                   :let [iuri (end-point-url varnish-port bucket (format "set-me-%d" i) :host varnish-host)]]
+               (do
+                 (client/delete iuri {:throw-exceptions false})
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 404})
+                 (client/post iuri {:body (str "with-a-value-" i)
+                                    :headers {"if-unmodified-since" http-date}}) => (contains {:status 200})
+
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 200
+                                                                           :headers #(= (get % "x-cache") "MISS")})
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 200
+                                                                           :headers #(= (get % "x-cache") "HIT")})
+
+                 (client/get iuri {:headers {"If-Match" http-date}}) => (contains {:status 200
+                                                                                   :headers #(= (get % "x-cache") "MISS")
+                                                                                   :body (str "with-a-value-" i)})
+                 (client/get iuri {:headers {"If-Match" http-date}}) => (contains {:status 200
+                                                                                   :headers #(= (get % "x-cache") "HIT")
+                                                                                   :body (str "with-a-value-" i)})
+
+                 ; both forms should be purged on delete
+                 (client/delete iuri {:throw-exceptions false}) => (contains {:status 200})
+                 (client/get iuri {:throw-exceptions false}) => (contains {:status 404})
+                 (client/get iuri {:throw-exceptions false :headers {"If-Match" http-date}}) => (contains {:status 404}))))
+           )
+
+         (do
+           (println "**** Set VARNISH_PURGE_HOST and VARNISH_PURGE_PORT in the environment. ****")
+           (println "You will also need varnish and poky running as a service."))))

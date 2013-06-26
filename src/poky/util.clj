@@ -1,6 +1,7 @@
 (ns poky.util
   (:require (clj-time [coerce :as tc]
-                      [format :as tf]))
+                      [format :as tf])
+            [clojure.java.io :as io])
   (:import java.sql.Timestamp
            java.text.SimpleDateFormat
            java.util.TimeZone
@@ -9,6 +10,7 @@
 
 (def ascii-table-base 65)
 (def ascii-table-range 58)
+(def crlf (str \return \newline))
 
 (defn random-ascii-block
   "Generate a random set of characters from an ASCII block. If base and table-range
@@ -87,3 +89,18 @@
   (if (string? s)
     (Integer/parseInt s)
     (int s)))
+
+
+(defn varnish-purge
+  "Perform a varnish purge on the specified path. We are having to do this at a
+  low level because clj-http doesn't support custom HTTP methods."
+  [host port path]
+  (let [s (java.net.Socket. host (parse-int port))]
+    (doto (io/writer s)
+      (.write (format "PURGE %s HTTP/1.1" path))
+      (.write crlf)
+      (.write (format "Host: %s" host))
+      (.write crlf)
+      (.write crlf)
+      (.flush))
+    (.close s)))
