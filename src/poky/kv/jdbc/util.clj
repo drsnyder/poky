@@ -157,3 +157,38 @@
         (with-logged-connection conn
           (sql/with-query-results results (apply vector query bucket sop-params)
             (doall results)))))))
+
+(defn- mset-prepared-statement
+  "Returns a PreparedStatement for mset. Assumes open SQL connection.
+  Disclaimer: I don't normally manually create prepared statements, but I created
+  this function while debugging It ends up being more efficient then normal
+  constructing & passing of arguments as 2nd arg to sql/with-query-results."
+  [data]
+  (let [query (str "SELECT upsert_kv_data(b, k, v, t) FROM (VALUES "
+                   (string/join "," (repeat (count data) "(?,?,?,?::timestamptz)"))
+                   ") AS data (b, k, v, t)")
+        stmt (sql/prepare-statement (sql/connection) query)]
+    (dorun
+      (map-indexed
+        (fn [ix {b :bucket k :key v :data t :modified_at}]
+          (let [offset (* ix 4)]
+            (doto stmt
+              (.setObject (+ offset 1) b)
+              (.setObject (+ offset 2) k)
+              (.setObject (+ offset 3) v)
+              (.setObject (+ offset 4) t))))
+        data))
+    stmt))
+
+(defn jdbc-mset
+  "Upserts multiple records in data. Records are hashmaps with following fields:
+  :bucket      (required)
+  :key         (required)
+  :data        (required)
+  :modified_at (optional)
+  "
+  [conn data]
+  (with-logged-connection conn
+    (sql/with-query-results results
+      [(mset-prepared-statement data)]
+      (doall results))))
