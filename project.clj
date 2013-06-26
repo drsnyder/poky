@@ -1,4 +1,4 @@
-(defproject org.clojars.drsnyder/poky "1.1.0"
+(defproject org.clojars.drsnyder/poky "1.2.0"
   :description "A key-value store built on PostgreSQL."
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.cli "0.2.2"]
