@@ -79,6 +79,7 @@ task :production do
     deploy_env["VARNISH_MAX_THREADS"] = "2000"
     deploy_env["VARNISH_THREAD_POOLS"] = "8"
     deploy_env["STATSD_KEY_BASE"] = "poky.prod"
+    deploy_env["NEWRELIC_AGENT"] = "-javaagent:/var/lib/newrelic/newrelic.jar"
 end
 
 

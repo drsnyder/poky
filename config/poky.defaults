@@ -9,3 +9,4 @@ export POKY_ERR_LOG=$WORKING_DIR/log/poky.err.log
 export POKY_OUT_LOG=$WORKING_DIR/log/poky.out.log
 
 export POKY_PID=$WORKING_DIR/run/poky.pid
+export NEWRELIC_AGENT=''
