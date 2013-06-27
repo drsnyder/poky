@@ -14,7 +14,8 @@
             [environ.core :refer [env]]
             [clj-time.coerce :as tc]
             [ring.middleware.stacktrace :as trace]
-            [ring.middleware.statsd :as statsd]))
+            [ring.middleware.statsd :as statsd]
+            [ring.middleware.new-relic :as new-relic]))
 
 (def ^:private default-jetty-max-threads 25)
 (def ^:private default-log-level :info)
@@ -159,7 +160,10 @@ Status codes to expect:
 (defn api
   [kvstore]
   (let [api-routes (routes
-                     (context "/kv" [] (kv-routes kvstore))
+                     (context "/kv" [] (-> (kv-routes kvstore)
+                                           (new-relic/wrap-transaction-name
+                                             :category "kv"
+                                             :tx-name-fn #(str "/" (name (:request-method %))))))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
     (-> (handler/api api-routes)
