@@ -15,7 +15,7 @@ DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
              -t ${VARNISH_TTL} \
              -w ${VARNISH_MIN_THREADS},${VARNISH_MAX_THREADS},${VARNISH_THREAD_TIMEOUT} \
              -u $VARNISHD_USER -g $VARNISHD_GROUP \
-             -s ${VARNISH_STORAGE} \
+             -s "${VARNISH_STORAGE_TYPE},${VARNISH_STORAGE_SIZE}" \
              -p thread_pools=${VARNISH_THREAD_POOLS} \
              -p thread_pool_add_delay=${VARNISH_THREAD_POOL_ADD_DELAY} \
              -p listen_depth=${VARNISH_LISTEN_DEPTH} \
