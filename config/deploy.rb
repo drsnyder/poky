@@ -75,7 +75,7 @@ task :production do
     deploy_env["VARNISH_PURGE_HOST"] = host
     deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@#{host}/poky")
     deploy_env["STATSD_HOST"] = "utility002-private:8125"
-    deploy_env["VARNISH_STORAGE_SIZE"] = "2048M"
+    deploy_env["VARNISH_STORAGE_SIZE"] = "8192M"
     deploy_env["VARNISH_MAX_THREADS"] = "2000"
     deploy_env["VARNISH_THREAD_POOLS"] = "8"
     deploy_env["STATSD_KEY_BASE"] = "poky.prod"
