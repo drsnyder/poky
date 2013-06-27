@@ -1,5 +1,7 @@
 (ns poky.system
   (:require [environ.core :refer [env]]
+            [poky.kv.jdbc :refer [get-connection]]
+            [poky.kv.jdbc.util :refer [close-connection]]
             [ring.middleware.statsd :as statsd]
             [clojure.tools.cli :as cli]))
 
@@ -16,9 +18,12 @@
     (let [server (get @(:state this) :server)
           store (get @(:state this) :store)]
       (swap! state assoc :running
-             (server store port))))
+             (server store port))
+      this))
   (stop [this]
-    (.stop (:running @state))))
+    (-> this store get-connection close-connection)
+    (.stop (:running @state))
+    this))
 
 (defn create-system
   [store server]

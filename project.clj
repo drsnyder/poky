@@ -16,13 +16,16 @@
                  [clj-stacktrace "0.2.5"]
                  [clj-time "0.5.1"]
                  [environ "0.2.1"]]
-  :profiles {:dev {:dependencies [[midje "1.5.1"]]
+  :profiles {:dev {:source-paths ["dev"]
+                   :dependencies [[midje "1.5.1"]
+                                  [org.clojure/tools.nrepl "0.2.3"]
+                                  [org.clojure/tools.namespace "0.2.3"]]
                    :plugins [[lein-midje "3.0.0"]]}}
   :license {:name "MIT"
             :url "http://opensource.org/licenses/MIT"
             :distribution :repo
             :comments "MIT"}
-  :repl-options {:init-ns poky.repl-helper}
+  :repl-options {:init-ns user}
   :main poky.protocol.http.main
   :uberjar-name "poky-standalone.jar"
   :jvm-opts ["-server"])
