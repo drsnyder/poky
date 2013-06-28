@@ -17,6 +17,7 @@ backend poky {
 acl purgers {
     "127.0.0.1";
     "10.0.0.0"/8;
+    "192.0.0.0"/8;
 }
 
 
@@ -26,21 +27,26 @@ sub vcl_recv {
     set req.backend = poky;
     set req.grace = 5m;
 
-    # don't use this for hashing. we only have one
-    unset req.http.Host;
-
     if (req.request == "PURGE") {
         if (!client.ip ~ purgers) {
             error 405 "Method not allowed";
         }
 
-        ban("obj.http.x-url == " + req.url);
+        return (lookup);
     }
 
     if (req.url ~ "^/status$") {
         return (pass);
     }
 }
+
+sub vcl_hash {
+    # we only ever need to hash on the req.url since there is only one
+    # host/server.
+    hash_data(req.url);
+    return (hash);
+}
+
 
 sub vcl_fetch {
     set beresp.http.x-url = req.url;
@@ -52,13 +58,15 @@ sub vcl_fetch {
     }
 
     if (beresp.status == 404) {
+        # we want to bypass the default hit_for_pass object so we can get HITs on this immediately
+        # if it's updated. otherwise, we will encounter misses for 120s
         set beresp.ttl = 0s;
+        return (deliver);
     }
 
     if (beresp.status >= 500) {
         set beresp.ttl = 0s;
     }
-
 }
 
 sub vcl_deliver {
@@ -68,4 +76,24 @@ sub vcl_deliver {
     } else {
         set resp.http.X-Cache = "MISS";
     }
+}
+
+sub vcl_hit {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged.";
+        }
+}
+
+sub vcl_miss {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged.";
+        }
+}
+
+sub vcl_pass {
+        if (req.request == "PURGE") {
+                error 503 "Shouldn't get to (pass) on PURGE.";
+        }
 }

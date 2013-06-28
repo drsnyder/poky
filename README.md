@@ -92,6 +92,22 @@ For additional documentation:
 
     $ curl -X GET http://localhost:8081/help
 
+## Working in the REPL
+
+For logging to work properly, add a profile to your ~/lein/profiles.clj that
+sets the Java define `poky.home`:
+
+    {:poky {:jvm-opts ["-Dpoky.home=/path/to/poky"]}}
+
+This will initialize the logging to write to /path/to/poky/log/poky.log. When
+you start the repl, start it with:
+
+    lein with-profile dev,poky repl
+
+Failing to do so may result in some exceptions being thrown when the repl is
+started.
+
+
 ## Consistency
 
 Poky observes the If-Unmodified-Since header. If this header is present in a

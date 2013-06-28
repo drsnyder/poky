@@ -1,11 +1,12 @@
 # Poky default config.
 
-POKY_PORT=8081
-MAX_POOL_SIZE=25
-MAX_THREADS=100
+export POKY_PORT=8081
+export MAX_POOL_SIZE=25
+export MAX_THREADS=100
 
-POKY=$WORKING_DIR/scripts/run.http.text.sh
-POKY_ERR_LOG=$WORKING_DIR/log/poky.err.log
-POKY_OUT_LOG=$WORKING_DIR/log/poky.out.log
+export POKY=$WORKING_DIR/scripts/run.http.text.sh
+export POKY_ERR_LOG=$WORKING_DIR/log/poky.err.log
+export POKY_OUT_LOG=$WORKING_DIR/log/poky.out.log
 
-POKY_PID=$WORKING_DIR/run/poky.pid
+export POKY_PID=$WORKING_DIR/run/poky.pid
+export NEWRELIC_AGENT=''

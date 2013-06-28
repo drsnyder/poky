@@ -50,11 +50,10 @@ VARNISH_THREAD_POOL_ADD_DELAY=2
 # this is the default, we should be well under 100 for now
 VARNISH_LISTEN_DEPTH=1024
 
+# Backend storage specification
 # Cache file size: in bytes, optionally using k / M / G / T suffix,
 VARNISH_STORAGE_SIZE=512M
-
-# Backend storage specification
-VARNISH_STORAGE="malloc,${VARNISH_STORAGE_SIZE}"
+VARNISH_STORAGE_TYPE="malloc"
 
 # Default TTL used when the backend does not specify one
 VARNISH_TTL=120

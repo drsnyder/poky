@@ -52,27 +52,34 @@ deploy_env["VARNISH_PURGE_PORT"] = deploy_env['VARNISH_LISTEN_PORT']
 
 desc "Deploy to the poky development environment."
 task :development do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@dev.poky.huddler.com/poky_dev")
+    host = "dev.poky.huddler.com"
+    role :app, host
+    deploy_env["VARNISH_PURGE_HOST"] = host
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@#{host}/poky_dev")
     deploy_env["STATSD_KEY_BASE"] = "poky.dev"
-    role :app, "dev.poky.huddler.com"
 end
 
 desc "Deploy to the poky qa environment."
 task :qa do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@qa.poky.huddler.com/poky_qa")
+    host = "qa.poky.huddler.com"
+    role :app, host
+    deploy_env["VARNISH_PURGE_HOST"] = host
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@#{host}/poky_qa")
     deploy_env["STATSD_KEY_BASE"] = "poky.qa"
-    role :app, "qa.poky.huddler.com"
 end
 
 desc "Deploy to the poky production environment."
 task :production do
-    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@prod.poky.huddler.com/poky")
+    host = "prod.poky.huddler.com"
+    role :app, host
+    deploy_env["VARNISH_PURGE_HOST"] = host
+    deploy_env["DATABASE_URL"] = fetch(:database_url,"postgresql://postgres@#{host}/poky")
     deploy_env["STATSD_HOST"] = "utility002-private:8125"
-    deploy_env["STATSD_KEY_BASE"] = "poky.prod"
-    deploy_env["VARNISH_STORAGE_SIZE"] = "1024M"
-    deploy_env["VARNISH_MAX_THREADS"] = "2500"
+    deploy_env["VARNISH_STORAGE_SIZE"] = "8192M"
+    deploy_env["VARNISH_MAX_THREADS"] = "2000"
     deploy_env["VARNISH_THREAD_POOLS"] = "8"
-    role :app, "prod.poky.huddler.com"
+    deploy_env["STATSD_KEY_BASE"] = "poky.prod"
+    deploy_env["NEWRELIC_AGENT"] = "-javaagent:/var/lib/newrelic/newrelic.jar"
 end
 
 
