@@ -224,7 +224,9 @@ Status codes to expect:
                                            (new-relic/wrap-transaction-name
                                              :category "kv"
                                              :tx-name-fn #(str "/" (name (:request-method %))))))
-                     (context "/multi" [] (multi-routes kvstore))
+                     (context "/multi" [] (-> (multi-routes kvstore)
+                                              (new-relic/wrap-transaction-name
+                                                :tx-name-fn #(str "/multi/" (name (:request-method %))))))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
     (-> (handler/api api-routes)
