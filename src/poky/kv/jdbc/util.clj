@@ -129,7 +129,7 @@
   Entries with keys that doesn't map to a truthy value are excluded (ie sanitization).
   TODO: Add ability to specify comparison operator"
   [m cols]
-  (let [xs (for [[k v] m :let [col (cols k)] :when col] [(str col "=?") v])]
+  (if-let [xs (seq (for [[k v] m :let [col (cols k)] :when col] [(str col "=?") v]))]
     (cons (string/join " AND " (map first xs))
           (mapcat rest xs))))
 
@@ -140,7 +140,7 @@
   form the query partial.
   Retuns a tuple of [query-partial query-partial-params]"
   [products cols]
-  (let [xs (map #(product-query-and-vals % cols) products)]
+  (if-let [xs (seq (filter identity (map #(product-query-and-vals % cols) products)))]
     [(string/join " OR " (map #(str "(" (first %) ")") xs))
      (mapcat rest xs)]))
 
