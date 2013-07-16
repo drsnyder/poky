@@ -32,9 +32,20 @@ t.test(prephp, postphp, conf.level=0.99)
 
 qs = c(0.05, 0.25, 0.5, 0.75, 0.95)
 print("Pre quantiles:")
-quantile(prephp, probs = qs)
+preq = quantile(prephp, probs = qs)
+print(preq)
 print("Post quantiles:")
-quantile(postphp, probs = qs)
+postq = quantile(postphp, probs = qs)
+print(postq)
+
+preqdf = data.frame(id = qs, values = preq, name="Pre")
+postqdf = data.frame(id = qs, values = postq, name="Post")
+d = rbind(preqdf, postqdf)
+ggplot(d, aes(x=factor(id), y=values, fill=name)) +
+  geom_bar(position="dodge", stat="identity") +
+  labs(y="Time", x="Quantile", title=paste(args[3], "Pre and Post Quantiles")) +
+  theme(legend.title=element_blank())
+ggsave("tmp/before-after-quantiles.png")
 
 rmin = min(prephp, postphp)
 # trim the outliers at the 99th %
