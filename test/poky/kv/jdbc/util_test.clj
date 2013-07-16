@@ -52,36 +52,35 @@
                                         (jdbc-delete @@S bucket "key1")
                                         (jdbc-delete @@S bucket "key2")))]
     (facts :integration :jdbc-mget
-      (fact "basic mget"
-        (jdbc-mget @@S bucket [{:key "key1"} {:key "key2"}])
-        => (just
-             (contains {:key "key1"})
-             (contains {:key "key2"})
-             :in-any-order))
+      ;basic mget
+      (jdbc-mget @@S bucket [{:key "key1"} {:key "key2"}])
+      => (just
+           (contains {:key "key1"})
+           (contains {:key "key2"})
+           :in-any-order)
 
-      (facts "empty results"
-        (jdbc-mget @@S bucket []) => empty?
-        (jdbc-mget @@S bucket [{}]) => empty?
-        (jdbc-mget @@S bucket [{:key "unknown-key"}]) => empty?)
+      ;empty results
+      (jdbc-mget @@S bucket []) => empty?
+      (jdbc-mget @@S bucket [{}]) => empty?
+      (jdbc-mget @@S bucket [{:key "unknown-key"}]) => empty?
 
-      (facts "modified_at"
-        (let [key1-ts (-> (jdbc-get @@S bucket "key1") :modified_at)
-              key1-ts-invalid (java.sql.Timestamp. (+ (.getTime key1-ts) 36000))
-              key2-ts (-> (jdbc-get @@S bucket "key2") :modified_at)]
-          (fact "valid"
-            (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts}]) => (just (contains {:key "key1"})))
-          (fact "invalid"
-            (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts-invalid}]) => empty?)
-          (fact "invalid + valid"
-            (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts-invalid}
-                                   {:key "key2" :modified_at key2-ts}]) => (just (contains {:key "key2"})))))))
+      ;modified_at
+      (let [key1-ts (-> (jdbc-get @@S bucket "key1") :modified_at)
+            key1-ts-invalid (java.sql.Timestamp. (+ (.getTime key1-ts) 36000))
+            key2-ts (-> (jdbc-get @@S bucket "key2") :modified_at)]
+        ;valid
+        (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts}]) => (just (contains {:key "key1"}))
+        ;invalid
+        (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts-invalid}]) => empty?
+        ;invalid + valid
+        (jdbc-mget @@S bucket [{:key "key1" :modified_at key1-ts-invalid}
+                               {:key "key2" :modified_at key2-ts}]) => (just (contains {:key "key2"}))))
 
     (facts :integration :jdbc-mset
-      (fact "single set"
-        (jdbc-mset @@S bucket [{:key "key1" :data "data1"}]) => (just "inserted"))
-      (fact "multi set"
-        (let [key1-ts (util/http-date->Timestamp "Sat, 29 Jun 2013 22:43:43 GMT")]
-         (jdbc-mset @@S bucket [{:key "key1" :data "data1" :modified_at key1-ts}
-                                 {:key "key2" :data "data2"}]) => (just "inserted" "inserted")
-         (jdbc-get @@S bucket "key1") => (contains {:bucket bucket :key "key1" :data "data1" :modified_at key1-ts})
-         (jdbc-get @@S bucket "key2") => (contains {:bucket bucket :key "key2" :data "data2"})))))
+      (jdbc-mset @@S [{:bucket bucket :key "key1" :data "data1"}]) => (contains {:upsert_kv_data "updated"})
+
+      (let [key1-ts (util/http-date->Timestamp "Sat, 29 Jun 2013 22:43:43 GMT")]
+        (jdbc-mset @@S [{:bucket bucket :key "key1" :data "data1" :modified_at key1-ts}
+                        {:bucket bucket :key "key2" :data "data2"}]) => (list {:upsert_kv_data "rejected"} {:upsert_kv_data "updated"})
+        (jdbc-get @@S bucket "key1") => (contains {:bucket bucket :key "key1" :data "data1"})
+        (jdbc-get @@S bucket "key2") => (contains {:bucket bucket :key "key2" :data "data2"})))))
