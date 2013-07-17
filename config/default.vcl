@@ -1,7 +1,7 @@
 import std;
 backend poky {
   .host = "127.0.0.1";
-  .port = "8081";               # make sure this syncs up with the deploy config
+  .port = "9091";               # make sure this syncs up with the deploy config
   .connect_timeout = 1s;
   .first_byte_timeout = 5s;
   .between_bytes_timeout = 2s;
