@@ -33,7 +33,7 @@ set :use_sudo, false
 deploy_env = {}
 
 # see config/poky.defaults
-deploy_env['POKY_PORT']  = fetch(:poky_port, 8081); # if you change here, change in default.vcl
+deploy_env['POKY_PORT']  = fetch(:poky_port, 9091); # if you change here, change in default.vcl
 deploy_env['JMX_PORT']   = fetch(:jmx_port, 9101)
 deploy_env["STATSD_HOST"] = fetch(:statsd_host, "utility002:8125")
 deploy_env["STATSD_KEY_BASE"] = fetch(:statsd_key_base, "poky")
