@@ -100,17 +100,6 @@
       ["SELECT * FROM poky WHERE bucket=? AND key=?" b k]
       (first results))))
 
-(defn jdbc-mget
-  "Deprecated."
-  [conn b ks]
-  (with-logged-connection conn
-    (sql/with-query-results results
-      (vec (concat [(format "SELECT * FROM poky WHERE bucket=? AND key IN (%s)"
-                            (string/join "," (repeat (count ks) "?")))
-                    b]
-                   ks))
-      (doall results))))
-
 (defn jdbc-set
   "Set a bucket b and key k to value v. Returns a map with key :result upon success.
   The value at result will be one of \"inserted\", \"updated\" or \"rejected\"."
@@ -130,3 +119,76 @@
   (with-logged-connection conn
     (sql/delete-rows "poky"
        ["bucket=? AND key=?" b k])))
+
+;; ======== MULTI
+
+(defn- product-query-and-vals
+  "Returns list where first element is parameterized query predicate and remaining
+  elements are values for predicate.
+  Each key is mapped against cols with (cols key).
+  Entries with keys that doesn't map to a truthy value are excluded (ie sanitization).
+  TODO: Add ability to specify comparison operator"
+  [m cols]
+  (if-let [xs (seq (for [[k v] m :let [col (cols k)] :when col] [(str col "=?") v]))]
+    (cons (string/join " AND " (map first xs))
+          (mapcat rest xs))))
+
+(defn- sum-of-prods-condition
+  "Creates a 'sum-of-products' parameterized query condition from products, where
+  each element in in products in a map from columns to vals that should match a
+  single row when all are AND'ed together. Product queries is OR'ed together to
+  form the query partial.
+  Retuns a tuple of [query-partial query-partial-params]"
+  [products cols]
+  (if-let [xs (seq (filter identity (map #(product-query-and-vals % cols) products)))]
+    [(string/join " OR " (map #(str "(" (first %) ")") xs))
+     (mapcat rest xs)]))
+
+;; TODO Should we truncate timestamps on write (and with migration)?
+(def ^:private mget-cols {:bucket "bucket"
+                          :key "key"
+                          :modified_at "date_trunc('seconds', modified_at)"
+                          :created_at "date_trunc('seconds', created_at)"})
+(defn jdbc-mget
+  [conn bucket conds]
+  (let [[sop-cond sop-params] (sum-of-prods-condition conds mget-cols) ]
+    (if-not (string/blank? sop-cond)
+      (let [query (str "SELECT * FROM poky WHERE bucket=? AND (" sop-cond ")")]
+        (with-logged-connection conn
+          (sql/with-query-results results (apply vector query bucket sop-params)
+            (doall results)))))))
+
+(defn- mset-prepared-statement
+  "Returns a PreparedStatement for mset. Assumes open SQL connection.
+  Disclaimer: I don't normally manually create prepared statements, but I created
+  this function while debugging It ends up being more efficient then normal
+  constructing & passing of arguments as 2nd arg to sql/with-query-results."
+  [data]
+  (let [query (str "SELECT upsert_kv_data(b, k, v, t) FROM (VALUES "
+                   (string/join "," (repeat (count data) "(?,?,?,?::timestamptz)"))
+                   ") AS data (b, k, v, t)")
+        stmt (sql/prepare-statement (sql/connection) query)]
+    (dorun
+      (map-indexed
+        (fn [ix {b :bucket k :key v :data t :modified_at}]
+          (let [offset (* ix 4)]
+            (doto stmt
+              (.setObject (+ offset 1) b)
+              (.setObject (+ offset 2) k)
+              (.setObject (+ offset 3) v)
+              (.setObject (+ offset 4) t))))
+        data))
+    stmt))
+
+(defn jdbc-mset
+  "Upserts multiple records in data. Records are hashmaps with following fields:
+  :bucket      (required)
+  :key         (required)
+  :data        (required)
+  :modified_at (optional)
+  "
+  [conn data]
+  (with-logged-connection conn
+    (sql/with-query-results results
+      [(mset-prepared-statement data)]
+      (doall results))))

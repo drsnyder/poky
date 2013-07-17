@@ -1,6 +1,7 @@
 (ns poky.protocol.http
   (:require [poky.kv.core :as kv]
             [poky.util :as util]
+            [clojure.java.io :as io]
             [clojure.tools.logging :refer [infof warnf]]
             [clj-logging-config.log4j :refer [set-logger!]]
             (compojure [core :refer :all]
@@ -28,6 +29,16 @@ For key-value objects, the following are supported:
   - POST   /kv/:bucket/:key | creates object
   - DELETE /kv/:bucket/:key | deletes object
   - GET    /kv/:bucket/:key | returns object
+
+For dealing with batches of objects, the following are supported:
+  - POST   /multi/:bucket | returns objects
+  - PUT    /multi/:bucket | creates objects
+  - DELETE /multi/:bucket | deletes objects
+
+  * Request body should be JSON encoded array of objects.
+  * Request's Content-Type header must be JSON MIME type.
+  * Responses are JSON encoded
+  * Rejected gets/sets are not currently reported
 
 Other:
   - GET /status | returns 'ok' and status 200
@@ -88,7 +99,6 @@ Status codes to expect:
         (not-found "")))))
 
 
-
 (defn- wrap-put
   [kvstore b k headers body uri]
   (let [if-unmodified-since (get headers "if-unmodified-since" nil)
@@ -101,7 +111,7 @@ Status codes to expect:
       ; if If-Unmodified-Since was specified in the header, but didn't parse,
       ; reject this as a bad request.
       (response-with-status "Error in If-Unmodified-Since format. Use RFC 1123 date format." 400)
-      (condp = (kv/set* kvstore b k body {:modified modified})
+      (condp = (kv/set* kvstore b k body {:modified_at modified})
         :updated (response-with-purge "" 200 uri)
         :inserted (response-with-status "" 200) ; no need to purge on insert
         :rejected (do
@@ -157,13 +167,65 @@ Status codes to expect:
   (GET "/" []
        (response "ok")))
 
+;; ======== MULTI
+
+(defn- multi-item
+  "Creates and associates Timestamp objects for timestamp columns"
+  [{:keys [modified_at created_at] :as item}]
+  (cond-> item
+    modified_at (assoc :modified_at (util/http-date->Timestamp modified_at))
+    created_at (assoc :created_at (util/http-date->Timestamp created_at))))
+
+(defn- multi-get
+  [kvstore b body]
+  (kv/mget* kvstore b (map multi-item body)))
+
+(defn- multi-set
+  [kvstore b body]
+  (kv/mset* kvstore b (map multi-item body)))
+
+(defn- multi-handler
+  "Handler logic for multi-* operations. Provides generic & consistent handling
+  for JSON responses.
+  Parses JSON request body and invokes, (multi-fn kvstore bucket json-body)"
+  [kvstore multi-fn {:keys [params headers body] {:keys [b]} :params}]
+  (if (not= (get headers "content-type") "application/json")
+    (-> (response "Invalid Content-Type") (status 415))
+    (try
+      (let [json-body (json/parse-stream (io/reader body) true)
+            result (multi-fn kvstore b json-body)]
+        (-> (response (json/generate-string result))
+            (header "Content-Type" "application/json")))
+      (catch com.fasterxml.jackson.core.JsonParseException e
+        (-> (response "Failed to parse JSON body") (status 400)))
+      (catch com.fasterxml.jackson.core.JsonGenerationException e
+        (-> (response "Failed to build JSON response") (status 500))))))
+
+(defn multi-routes
+  [kvstore]
+  (routes
+    (POST ["/:b" :b valid-key-regex]
+          request
+          (multi-handler kvstore multi-get request))
+    (PUT ["/:b" :b valid-key-regex]
+         request
+         (multi-handler kvstore multi-set request))
+    (DELETE ["/:b" :b valid-key-regex]
+            request
+            (-> (response "Multi-delete not supported yet")
+                (status 501)))))
+
+;; ========
+
 (defn api
   [kvstore]
   (let [api-routes (routes
                      (context "/kv" [] (-> (kv-routes kvstore)
                                            (new-relic/wrap-transaction-name
-                                             :category "kv"
-                                             :tx-name-fn #(str "/" (name (:request-method %))))))
+                                             :tx-name-fn #(str "/kv/" (name (:request-method %))))))
+                     (context "/multi" [] (-> (multi-routes kvstore)
+                                              (new-relic/wrap-transaction-name
+                                                :tx-name-fn #(str "/multi/" (name (:request-method %))))))
                      (context "/status" [] status-routes)
                      (context "*" [] fall-back-routes))]
     (-> (handler/api api-routes)

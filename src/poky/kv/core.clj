@@ -7,8 +7,6 @@
         {k value
         :modified_at ts
         :version version}")
-  (mget* [this b ks] [this b ks params]
-        "Deprecated.")
   (set* [this b k value] [this b k value params]
         "Set the object at the specified bucket and key with value. Returns:
         :created
@@ -18,6 +16,11 @@
   (delete* [this b k]
         "Delete the object at the specified bucket and key. Returns true if the object
         was deleted and false otherwise."))
+
+(defprotocol KeyValueMulti
+  (mget* [this b conds])
+  (mset* [this b data])
+  (mdelete* [this b conds]))
 
 (defprotocol Connection
   (connection [this] "Get the connection.")

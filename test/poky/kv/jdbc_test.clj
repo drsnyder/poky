@@ -61,6 +61,24 @@
          (create-connection ..store..) => (delay ..store..)
          (jdbc-delete ..store.. ..bucket.. ..key..) => '(0)))
 
+(facts :jdbc :mget
+  (kv/mget* (kv.jdbc/create ..store..) ..bucket.. ..conds..) => (contains {..key1.. ..data1..
+                                                                           ..key2.. ..data2..})
+  (provided
+    (create-connection ..store..) => (delay ..store..)
+    (jdbc-mget ..store.. ..bucket.. ..conds..) => [{:key ..key1..
+                                                    :data ..data1..}
+                                                   {:key ..key2..
+                                                    :data ..data2..}]))
+
+(facts :jdbc :mset
+  (let [data [{:key ..key1.. :data ..data1..}]
+        every-has-bucket? (partial every? #(= (:bucket %) ..bucket..))]
+    (kv/mset* (kv.jdbc/create ..store..) ..bucket.. ..data..) => ...response..
+   (provided
+     (create-connection ..store..) => (delay ..store..)
+     (jdbc-mset ..store.. (as-checker every-has-bucket?)) => ...response..)))
+
 
 
 (with-state-changes [(around :facts (do (reset! S (kv.jdbc/create (env :database-url)))
@@ -71,7 +89,7 @@
          (kv/set* @S bucket "key" "value") => :inserted
 
          (kv/set* @S bucket "key" "value") => :updated
-         (kv/set* @S bucket "key" "value" {:modified
+         (kv/set* @S bucket "key" "value" {:modified_at
                                            (tc/to-sql-date
                                              (t/minus (t/now) (t/days 1)))}) => :rejected)
 
