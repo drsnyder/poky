@@ -70,6 +70,5 @@ LRU_INTERVAL=60
 # The bytes of HTTP protocol workspace allocated for sessions. Default is 65k.
 SESS_WORKSPACE=524288
 
-## 
 ##
-VARNISHD_PID=$WORKING_DIR/run/varnish.pid
+##

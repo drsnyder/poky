@@ -7,6 +7,9 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
+
+export POKY_PID=$WORKING_DIR/run/poky.pid.$POKY_PORT
+
 DAEMON_OPTS="-p $POKY_PORT"
 
 function start() {

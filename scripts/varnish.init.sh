@@ -8,6 +8,7 @@ WORKING_DIR=$(cd $(dirname $0)/..; pwd)
 
 [ -e $WORKING_DIR/config/environment ] && . $WORKING_DIR/config/environment
 
+VARNISHD_PID=$WORKING_DIR/run/varnish.pid.$VARNISH_LISTEN_ADDRESS
 
 DAEMON_OPTS="-a ${VARNISH_LISTEN_ADDRESS}:${VARNISH_LISTEN_PORT} \
              -f ${VARNISH_VCL_CONF} \
