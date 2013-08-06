@@ -64,3 +64,57 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql;
+
+-- Multi-get items by key and, optionally, additional conditions
+--
+-- Arguments:
+--  bucket
+--  keys
+--  conds  Array of arrays containing tuples of [column, value] conditions to match a single row on
+--         In order to match specific entries, each item should contain a ['key', ?] tuple
+--         Example: Match two entries by key and respective modified_at
+--           ARRAY[
+--             [['key', '36.123.default'], ['modified_at', '1988-03-18 12:00:00+00']],
+--             [['key', '36.124.default'], ['modified_at', '1987-11-11 12:00:00+00']],
+--           ]
+CREATE OR REPLACE FUNCTION mget(bucket text, keys text[], conds array[][][]=null) RETURNS SETOF poky AS
+$$
+DECLARE
+  sql       text;
+  row_conds text[][];
+  tuple     text[];
+  minterms  text[];
+  maxterms  text[];
+BEGIN
+  sql := 'SELECT * FROM poky WHERE bucket = $1 AND key = ANY($2)';
+
+  IF conds IS NOT NULL THEN
+    sql := 'WITH base_data AS (' || sql || ') SELECT * FROM base_data WHERE ';
+
+    FOREACH row_conds SLICE 2 IN ARRAY conds LOOP
+      FOREACH tuple SLICE 1 IN ARRAY row_conds LOOP
+        minterms := array_append(
+          minterms,
+          CASE WHEN tuple[1] = 'created_at' OR tuple[1] = 'modified_at' THEN
+            'date_trunc(''seconds'', ' || quote_ident(tuple[1]) || ') = date_trunc(''seconds'',' || quote_literal(tuple[2]) || ')'
+          ELSE
+            quote_ident(tuple[1]) || ' = ' || quote_literal(tuple[2])
+          END
+        );
+      END LOOP;
+
+      maxterms := array_append(
+        maxterms,
+        '(' || array_to_string(minterms, ' AND ') || ')'
+      );
+      minterms := '{}';
+    END LOOP;
+
+    sql := sql || array_to_string(maxterms, ' OR ');
+  END IF;
+
+  RETURN QUERY EXECUTE sql
+  USING bucket, keys;
+END;
+$$
+LANGUAGE plpgsql;
