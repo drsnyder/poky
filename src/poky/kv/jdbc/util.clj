@@ -139,9 +139,7 @@
          sql (list)
          params (list)]
     (if row
-      (let [qs (->> (map poky-column-types (keys row))
-                    (map #(str "[?::text, ?::" % "]"))
-                    (wrap-join \[ \, \]))]
+      (let [qs (wrap-join \[ \, \] (repeat (count row) "[?, ?]"))]
         (recur conds
                (conj sql qs)
                (concat params (mapcat (juxt (comp name key) val) row))))
@@ -157,8 +155,8 @@
   [bucket conds]
   (let [[cond-sql cond-params] (mget-sproc-conds conds)
         sql (wrap-join "SELECT * FROM mget(" \, \)
-                       ["?::text"
-                        (pg-array (repeat (count conds) "?::text"))
+                       ["?"
+                        (pg-array (repeat (count conds) "?"))
                         (pg-array cond-sql)])]
     (apply vector sql bucket
            (concat (map :key conds)
