@@ -133,17 +133,13 @@
 ;; ======== MULTI
 
 (defn- mget-sproc-conds
-  "Returns"
+  "Returns tuple of [cond-sql cond-params] for conditions
+  cond-sql is a string representation of PG array for sproc's 3rd argument"
   [conds]
-  (loop [[row & conds] conds
-         sql (list)
-         params (list)]
-    (if row
-      (let [qs (wrap-join \[ \, \] (repeat (count row) "[?, ?]"))]
-        (recur conds
-               (conj sql qs)
-               (concat params (mapcat (juxt (comp name key) val) row))))
-      [sql params])))
+  (let [pairs (map #(wrap-join \[ \, \] (repeat (count %) "[?, ?]")) conds)
+        ks (map name (mapcat keys conds))
+        vs (mapcat vals conds)]
+    [(pg-array pairs) (interleave ks vs)]))
 
 (defn- mget-sproc
   "Returns the SQL params vector (ie [sql & params]) for the stored procedure,
@@ -157,7 +153,7 @@
         sql (wrap-join "SELECT * FROM mget(" \, \)
                        ["?"
                         (pg-array (repeat (count conds) "?"))
-                        (pg-array cond-sql)])]
+                        cond-sql])]
     (apply vector sql bucket
            (concat (map :key conds)
                    cond-params))))
