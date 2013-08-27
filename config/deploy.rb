@@ -29,6 +29,7 @@ set :deploy_to, "/var/www/poky"
 set :user, "deployer"
 set :group, "deployer"
 set :use_sudo, false
+set :use_varnish, false
 
 deploy_env = {}
 
@@ -146,19 +147,22 @@ namespace :deploy do
 
   task :stop, :roles => :app do
     poky.stop
-    varnish.stop
+    varnish.stop if fetch(:use_varnish)
   end
 
   task :start, :roles => :app do
     poky.start
-    varnish.start
+    varnish.start if fetch(:use_varnish)
   end
 
   task :restart, :roles => :app do
     poky.stop
     poky.start
-    varnish.stop
-    varnish.start
+
+    unless fetch(:use_varnish)
+      varnish.stop
+      varnish.start
+    end
   end
 
 
@@ -201,10 +205,13 @@ after  "deploy:create_symlink",  "deploy:update_symlinks"
 after  "deploy:update_symlinks", "deploy:migrate"
 after  "deploy",                 "deploy:pause"
 after  "deploy",                 "poky:check"
-after  "deploy",                 "varnish:check"
-after  "deploy",                 "varnish:reload"
 after  "deploy",                 "deploy:cleanup"
 
 before "deploy:setup",           "deploy:set_perms"
-after  "varnish:stop",           "deploy:pause"
 after  "poky:stop",              "deploy:pause"
+
+unless fetch(:use_varnish)
+  after  "varnish:stop",           "deploy:pause"
+  after  "deploy",                 "varnish:check"
+  after  "deploy",                 "varnish:reload"
+end
