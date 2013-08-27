@@ -15,7 +15,7 @@
             [clj-time.format :as tf]
             [clojure.java.jdbc :as sql]
             [clojure.repl :refer [doc source]]
-            [clojure.tools.namespace.repl :refer  (refresh refresh-all)])
+            [clojure.tools.namespace.repl :refer  (refresh refresh-all set-refresh-dirs)])
   (:import java.nio.ByteBuffer))
 
 (def S nil)

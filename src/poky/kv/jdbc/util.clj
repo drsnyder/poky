@@ -17,9 +17,12 @@
    :created_at "timestamptz"
    :modified_at "timestamptz"})
 
-(defn- wrap-join [b d a coll] (str b (string/join d coll) a))
+(defn wrap-join [b d a coll] (str b (string/join d coll) a))
 
 (defn pg-array [coll] (wrap-join "ARRAY[" \, \] coll))
+
+(defn pg-mget-param [k m]
+  (str \( k \, m ")::mget_param_row"))
 
 (defn create-db-spec
   "Given a dsn and optionally a driver create a db spec that can be used with pool to
@@ -132,31 +135,28 @@
 
 ;; ======== MULTI
 
-(defn- mget-sproc-conds
+(defn mget-sproc-conds
   "Returns tuple of [cond-sql cond-params] for conditions
   cond-sql is a string representation of PG array for sproc's 3rd argument"
   [conds]
-  (let [pairs (map #(wrap-join \[ \, \] (repeat (count %) "[?, ?]")) conds)
-        ks (map name (mapcat keys conds))
-        vs (mapcat vals conds)]
-    [(pg-array pairs) (interleave ks vs)]))
+  (let [param-pairs (map #(apply pg-mget-param %) (repeat (count conds) (list \? \?)))
+        value-pairs (map (juxt :key :modified_at) conds)]
+    [param-pairs value-pairs]))
 
-(defn- mget-sproc
+(defn mget-sproc
   "Returns the SQL params vector (ie [sql & params]) for the stored procedure,
-  mget(text, text[], text[][][])
+  mget(bucket::text, (key::text, ts::timestamp)[])
 
   Example:
   (mget-sproc 'b' [{:key 'key1'} {:key 'key2'}) =>
-  ['SELECT * FROM mget(?, ARRAY[?, ?], ARRAY[[[?, ?]], [[?, ?]]])' 'b' 'key1' 'key2' 'key' 'key1' 'key' 'key2']"
+  ['SELECT * FROM mget(?, ARRAY[(?, ?)::mget_param_row, (?, ?)::mget_param_row])' 'b' 'key1' 'modified_at1' 'key2' 'modified_at2']"
   [bucket conds]
-  (let [[cond-sql cond-params] (mget-sproc-conds conds)
-        sql (wrap-join "SELECT * FROM mget(" \, \)
-                       ["?"
-                        (pg-array (repeat (count conds) "?"))
-                        cond-sql])]
-    (apply vector sql bucket
-           (concat (map :key conds)
-                   cond-params))))
+  (when (not (empty? conds))
+    (let [[cond-sql cond-params] (mget-sproc-conds conds)
+          sql (wrap-join "SELECT * FROM mget(" \, \)
+                         ["?"
+                          (pg-array cond-sql)])]
+      (apply vector sql bucket (flatten cond-params )))))
 
 (defn jdbc-mget
   [conn bucket conds]

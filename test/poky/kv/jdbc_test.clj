@@ -16,7 +16,6 @@
 (def S (atom nil))
 
 
-
 (facts :jdbc :get
        ; midje doesn't allow you to test metaconstants for equality. inserting
        ; bogus values here
