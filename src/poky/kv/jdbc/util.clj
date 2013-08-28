@@ -139,7 +139,7 @@
   "Returns tuple of [cond-sql cond-params] for conditions
   cond-sql is a string representation of PG array for sproc's 3rd argument"
   [conds]
-  (let [param-pairs (map #(apply pg-mget-param %) (repeat (count conds) (list \? \?)))
+  (let [param-pairs  (repeat  (count conds)  (pg-mget-param \? \?))
         value-pairs (map (juxt :key :modified_at) conds)]
     [param-pairs value-pairs]))
 
