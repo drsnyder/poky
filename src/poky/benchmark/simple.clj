@@ -56,6 +56,17 @@
                        (keys m))]
     (shuffle (apply concat by-bucket))))
 
+
+(defn current-time
+  []
+  (. java.lang.System  (clojure.core/nanoTime)))
+
+(defn elapsed-time
+  [start]
+  (/ (double (- (current-time)
+                start))
+     1000000.0))
+
 (comment
   (bench/bench-jdbc-mget
     (connection (system/store S))
@@ -67,16 +78,19 @@
   [conn input-files request-size &{:keys [check] :or [check #(count (get % :data ""))]}]
   (let [m (load-lookup-sets input-files)
         sets (create-mget-bench-input m request-size)
-        start (. java.lang.System  (clojure.core/nanoTime))
-        result (dorun (map check
-                           (flatten
-                             (map #(jdbc-util/jdbc-mget
-                                     conn
-                                     (first %)
-                                     (rest %))
-                                  sets))))]
-    {:result result
-     :elapsed (/
-               (- (. java.lang.System  (clojure.core/nanoTime))
-                  start)
-               1000000.0)}))
+        start (current-time)
+        result (doall (map
+                        (fn [tuple]
+                          (let [bucket (first tuple)
+                                maps (rest tuple)
+                                start (current-time)]
+                            (check (jdbc-util/jdbc-mget conn bucket maps))
+                            (elapsed-time start)))
+                        sets))
+        total (count result)
+        mean (util/mean result total)]
+    {:count total
+     :mean mean
+     :variance (double (util/variance result mean total))
+     :95th (util/percentile result 0.95)
+     :elapsed (elapsed-time start)}))
