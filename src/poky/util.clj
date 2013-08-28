@@ -104,3 +104,18 @@
       (.write crlf)
       (.flush))
     (.close s)))
+
+(defn lazy-reader
+  "Lazily read from fd."
+  [fd]
+  (lazy-seq
+    (if-let [line (.readLine fd)]
+      (cons line (lazy-reader fd))
+      (.close fd))))
+
+(defn read-file
+  "Lazily read from a file."
+  [file &{:keys [gunzip] :or {gunzip false}}]
+  (lazy-reader (cond-> (io/input-stream file)
+                         gunzip (java.util.zip.GZIPInputStream.)
+                         true (io/reader))))
