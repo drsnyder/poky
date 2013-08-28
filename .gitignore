@@ -13,3 +13,4 @@ run
 log
 config/environment
 tmp
+\.R*
