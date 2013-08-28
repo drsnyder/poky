@@ -10,6 +10,19 @@
 (def ^:private default-min-pool-size 3)
 (def ^:private default-max-pool-size 15)
 (def ^:private default-driver "org.postgresql.Driver")
+(def ^:private poky-column-types
+  {:bucket "text"
+   :key "text"
+   :data "text"
+   :created_at "timestamptz"
+   :modified_at "timestamptz"})
+
+(defn wrap-join [b d a coll] (str b (string/join d coll) a))
+
+(defn pg-array [coll] (wrap-join "ARRAY[" \, \] coll))
+
+(defn pg-mget-param [k m]
+  (str \( k \, m ")::mget_param_row"))
 
 (defn create-db-spec
   "Given a dsn and optionally a driver create a db spec that can be used with pool to
@@ -122,41 +135,35 @@
 
 ;; ======== MULTI
 
-(defn- product-query-and-vals
-  "Returns list where first element is parameterized query predicate and remaining
-  elements are values for predicate.
-  Each key is mapped against cols with (cols key).
-  Entries with keys that doesn't map to a truthy value are excluded (ie sanitization).
-  TODO: Add ability to specify comparison operator"
-  [m cols]
-  (if-let [xs (seq (for [[k v] m :let [col (cols k)] :when col] [(str col "=?") v]))]
-    (cons (string/join " AND " (map first xs))
-          (mapcat rest xs))))
+(defn mget-sproc-conds
+  "Returns tuple of [cond-sql cond-params] for conditions
+  cond-sql is a string representation of PG array for sproc's 3rd argument"
+  [conds]
+  (let [param-pairs  (repeat  (count conds)  (pg-mget-param \? \?))
+        value-pairs (map (juxt :key :modified_at) conds)]
+    [param-pairs value-pairs]))
 
-(defn- sum-of-prods-condition
-  "Creates a 'sum-of-products' parameterized query condition from products, where
-  each element in in products in a map from columns to vals that should match a
-  single row when all are AND'ed together. Product queries is OR'ed together to
-  form the query partial.
-  Retuns a tuple of [query-partial query-partial-params]"
-  [products cols]
-  (if-let [xs (seq (filter identity (map #(product-query-and-vals % cols) products)))]
-    [(string/join " OR " (map #(str "(" (first %) ")") xs))
-     (mapcat rest xs)]))
+(defn mget-sproc
+  "Returns the SQL params vector (ie [sql & params]) for the stored procedure,
+  mget(bucket::text, (key::text, ts::timestamp)[])
 
-;; TODO Should we truncate timestamps on write (and with migration)?
-(def ^:private mget-cols {:bucket "bucket"
-                          :key "key"
-                          :modified_at "date_trunc('seconds', modified_at)"
-                          :created_at "date_trunc('seconds', created_at)"})
+  Example:
+  (mget-sproc 'b' [{:key 'key1'} {:key 'key2'}) =>
+  ['SELECT * FROM mget(?, ARRAY[(?, ?)::mget_param_row, (?, ?)::mget_param_row])' 'b' 'key1' 'modified_at1' 'key2' 'modified_at2']"
+  [bucket conds]
+  (when (not (empty? conds))
+    (let [[cond-sql cond-params] (mget-sproc-conds conds)
+          sql (wrap-join "SELECT * FROM mget(" \, \)
+                         ["?"
+                          (pg-array cond-sql)])]
+      (apply vector sql bucket (flatten cond-params )))))
+
 (defn jdbc-mget
   [conn bucket conds]
-  (let [[sop-cond sop-params] (sum-of-prods-condition conds mget-cols) ]
-    (if-not (string/blank? sop-cond)
-      (let [query (str "SELECT * FROM poky WHERE bucket=? AND (" sop-cond ")")]
-        (with-logged-connection conn
-          (sql/with-query-results results (apply vector query bucket sop-params)
-            (doall results)))))))
+  (when-let [q (mget-sproc bucket conds)]
+    (with-logged-connection conn
+      (sql/with-query-results results q
+        (doall results)))))
 
 (defn- mset-prepared-statement
   "Returns a PreparedStatement for mset. Assumes open SQL connection.
