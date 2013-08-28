@@ -32,7 +32,6 @@
                          conj {:key (second row) :modified_at (csv-time->timestamp (last row)) }))
             m csv)))
 
-
 (defn load-lookup-sets
   "Loads all of the files into an empty map"
   ([m files]
@@ -56,7 +55,6 @@
                            (map #(conj % bucket) blocks)))
                        (keys m))]
     (shuffle (apply concat by-bucket))))
-
 
 (comment
   (bench/bench-jdbc-mget
@@ -82,4 +80,3 @@
                (- (. java.lang.System  (clojure.core/nanoTime))
                   start)
                1000000.0)}))
-
