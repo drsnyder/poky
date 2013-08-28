@@ -12,10 +12,17 @@
 (def pg-default-date (tf/formatter pg-default-time-fmt))
 
 (defn csv-time->timestamp
+  "Convert a timestamp in it's default format to something that JDBC can use for comparison to a timestamp."
   [str-ts]
   (tc/to-timestamp (tf/parse pg-default-date str-ts)))
 
 (defn load-lookup-set
+  "Load the rows from the given file hashed by the first column which should be the bucket. The expected format is:
+
+  bucket,key,modified_at
+
+  The modified_at should be rounded to the second.
+  "
   [m file]
   (let [lines (util/read-file file)
         csv (map #(clojure.string/split % #",") lines)]
@@ -25,11 +32,22 @@
                          conj {:key (second row) :modified_at (csv-time->timestamp (last row)) }))
             m csv)))
 
+
 (defn load-lookup-sets
-  [files]
-  (reduce load-lookup-set {} files))
+  "Loads all of the files into an empty map"
+  ([m files]
+   (reduce load-lookup-set m files))
+  ([files]
+   (load-lookup-sets {} files)))
 
 (defn create-mget-bench-input
+  "Create mget benchmark input. This function takes a loaded map from (load-lookup-sets) and creates tupels of
+  of the form
+
+  (bucket {:key \"k1\" :modified_at \"ts\"} ...)
+
+  with request-size maps for input into jdbc-mget.
+  "
   [m request-size]
   (let [by-bucket (map (fn [bucket]
                          ; split the k,v pairs up into the request size blocks
@@ -41,13 +59,13 @@
 
 
 (comment
-  (bench/bench
+  (bench/bench-jdbc-mget
     (connection (system/store S))
     ["tmp/mothering.csv" "tmp/basenotes.csv" "tmp/avsforum.csv" "tmp/headfi.csv"]
     30))
 
 (defn bench-jdbc-mget
-  "Benchmark jdbc-mget."
+  "Benchmark jdbc-mget using the given list of input files and a request size."
   [conn input-files request-size &{:keys [check] :or [check #(count (get % :data ""))]}]
   (let [m (load-lookup-sets input-files)
         sets (create-mget-bench-input m request-size)
