@@ -16,6 +16,7 @@ CREATE TRIGGER poky_only_if_unmodified_since
  BEFORE UPDATE ON poky
    FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since();
 
+-- alterations if the constraints don't exist
 ALTER TABLE poky ALTER COLUMN modified_at SET NOT NULL;
 ALTER TABLE poky ALTER COLUMN modified_at SET DEFAULT NOW();
 ALTER TABLE poky ALTER COLUMN created_at SET NOT NULL;
