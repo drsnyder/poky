@@ -73,8 +73,28 @@
   "Should only be used in testing."
   [conn b]
   (sql/with-connection conn
-    (sql/delete-rows "poky"
-       ["bucket=?" b])))
+    (sql/with-query-results results ["SELECT purge_bucket(?) AS result" b]
+      (first results))))
+
+
+(defn using-partitioning?
+  "Determine if partitining is being used."
+  [conn]
+  (sql/with-connection conn
+    (sql/with-query-results results ["SELECT c.relname AS child
+                                      FROM pg_inherits
+                                        JOIN pg_class AS c ON (inhrelid=c.oid)
+                                        JOIN pg_class as p ON (inhparent=p.oid)
+                                      WHERE p.relname = 'poky'"]
+      (> (count results) 0))))
+
+(defn create-bucket
+  "Creates a bucket if partitioning is being used. A noop in a flat structure."
+  [conn b]
+  (when (using-partitioning? conn)
+    (sql/with-connection conn
+     (sql/with-query-results results ["SELECT create_bucket_partition(?) AS result" b]
+       (first results)))))
 
 (defn format-sql-exception
   "Formats the contents of an SQLException and return string.
@@ -130,8 +150,8 @@
   tuple does not exist."
   [conn b k]
   (with-logged-connection conn
-    (sql/delete-rows "poky"
-       ["bucket=? AND key=?" b k])))
+    (sql/with-query-results results ["SELECT delete_kv_data(?, ?) AS result" b k]
+      (first results))))
 
 ;; ======== MULTI
 
