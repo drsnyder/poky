@@ -38,9 +38,3 @@ $$
     (( mget_poky.modified_at IS NULL) OR date_trunc('seconds', poky.modified_at) = date_trunc('seconds', mget_poky.modified_at) )
   );
 $$ LANGUAGE SQL STABLE CALLED ON NULL INPUT;
-
-
-/***************************************************************************
-FIXME partitioning: move upsert to flat & partition. The partition versions need to be table specific.
-We also need to route deletes through a stored procedure.
-***************************************************************************/
