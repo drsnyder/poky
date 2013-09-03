@@ -19,7 +19,7 @@
 
 
 
-(def bucket (str (.name *ns*)))
+(def bucket (util/sanitize-bucket-name (str (.name *ns*))))
 (def S (atom nil))
 (def default-port 9999)
 
@@ -127,6 +127,7 @@
 
 (with-state-changes
   [(around :facts (do (reset! S (create-system))
+                    (create-bucket (kv/connection (system/store @S)) bucket)
                     (purge-bucket (kv/connection (system/store @S)) bucket)
                     (system/start @S default-port)
                     ?form

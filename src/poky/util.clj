@@ -104,3 +104,11 @@
       (.write crlf)
       (.flush))
     (.close s)))
+
+(defn sanitize-bucket-name
+  "FOR TESTING PURPOSES ONLY.
+  Don't use this to sanitize production bucket strings. The client should perform that function."
+  [bucket]
+  (-> bucket
+      (clojure.string/replace #"^[\d]" "")
+      (clojure.string/replace #"[^\w]" "_")))

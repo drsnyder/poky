@@ -1,19 +1,30 @@
 CREATE OR REPLACE FUNCTION create_bucket_partition(_bucket text) RETURNS VOID AS
 $$
 DECLARE
+  _child RECORD;
 BEGIN
 
   --- FIXME: make this idempotent. if the bucket exists, just return
+  EXECUTE format('SELECT c.relname AS child
+              FROM pg_inherits
+              JOIN pg_class AS c ON (inhrelid=c.oid)
+              JOIN pg_class as p ON (inhparent=p.oid)
+              WHERE p.relname = %L AND c.relname= %L', 'poky', 'poky_' || _bucket)
+  INTO _child;
 
-  EXECUTE format(
-    'CREATE TABLE poky_%I (
-      PRIMARY KEY (key),
-      CHECK (bucket::text = %L)
-    ) INHERITS (poky)',
-    _bucket, _bucket);
+  IF (_child IS NOT NULL) THEN
+    RAISE NOTICE 'Bucket % exists. Skipping.', _bucket;
+  ELSE
+    EXECUTE format(
+      'CREATE TABLE poky_%I (
+        PRIMARY KEY (key),
+        CHECK (bucket::text = %L)
+      ) INHERITS (poky)',
+      _bucket, _bucket);
 
-  EXECUTE format('CREATE TRIGGER poky_%I_only_if_unmodified_since BEFORE UPDATE ON poky_%I
-          FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since()', _bucket, _bucket);
+    EXECUTE format('CREATE TRIGGER poky_%I_only_if_unmodified_since BEFORE UPDATE ON poky_%I
+            FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since()', _bucket, _bucket);
+  END IF;
 
 END
 $$ LANGUAGE plpgsql;
@@ -29,6 +40,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION upsert_kv_data(b TEXT, k TEXT, d TEXT, m timestamptz DEFAULT NULL) RETURNS TEXT AS
 $$
 DECLARE
+  _rows INTEGER;
 BEGIN
 
     BEGIN
@@ -43,10 +55,14 @@ BEGIN
       IF (m IS NOT NULL) THEN
         EXECUTE format('UPDATE poky_%I SET data = %L, modified_at = %L WHERE key = %L AND bucket = %L ', b, d, m, k, b);
       ELSE
+        RAISE NOTICE 'inserting here';
         EXECUTE format('UPDATE poky_%I SET data = %L WHERE key = %L AND bucket = %L ', b, d, k, b);
       END IF;
 
-      IF (FOUND) THEN
+      -- EXECUTE does not update FOUND
+      GET DIAGNOSTICS _rows = ROW_COUNT;
+
+      IF (_rows = 1 /* FOUND */) THEN
         RETURN 'updated';
       ELSE
         RETURN 'rejected';
