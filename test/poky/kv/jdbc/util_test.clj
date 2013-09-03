@@ -18,6 +18,7 @@
                                       ; would require some refactoring of
                                       ; kv.jdbc to support in nested within
                                       ; sql/connection.
+                                      (create-bucket @@S bucket)
                                       (purge-bucket @@S bucket)
                                       ?form
                                       (close-connection @@S)))]
