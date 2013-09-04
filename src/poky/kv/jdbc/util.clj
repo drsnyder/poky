@@ -117,7 +117,7 @@
                                      JOIN pg_class AS c ON (inhrelid=c.oid)
                                      JOIN pg_class as p ON (inhparent=p.oid)
                                      WHERE p.relname = 'poky'"]
-      (> (count results) 0))))
+      (pos? (count results)))))
 
 
 (defn valid-bucket-name?
