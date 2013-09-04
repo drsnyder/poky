@@ -8,7 +8,7 @@
             [clojure.java.jdbc :as sql]
             [midje.sweet :refer :all]))
 
-(def bucket (util/sanitize-bucket-name (str (.name *ns*))))
+(def bucket (util/sanitize-bucket-name (str *ns*)))
 (def S (atom nil))
 
 (with-state-changes [(around :facts (do

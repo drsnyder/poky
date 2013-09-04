@@ -12,7 +12,7 @@
            [poky.kv.core.Connection]
            [java.sql.Timestamp]))
 
-(def bucket (util/sanitize-bucket-name (str (.name *ns*))))
+(def bucket (util/sanitize-bucket-name (str *ns*)))
 (def S (atom nil))
 
 
