@@ -120,7 +120,7 @@
       (> (count results) 0))))
 
 
-(defn valid-bucket-name
+(defn valid-bucket-name?
   "Returns truthy if the bucket name is valid."
   [bucket]
   (re-matches valid-partitioned-bucket-regex bucket))
@@ -135,7 +135,7 @@
   When partitioning is being used, returns truthy on success and nil on error."
   [conn b]
   (when (using-partitioning? conn)
-    (if (valid-bucket-name b)
+    (if (valid-bucket-name? b)
       (with-logged-connection conn
         (sql/with-query-results results ["SELECT create_bucket_partition(?) AS result" b]
           (first results)))
