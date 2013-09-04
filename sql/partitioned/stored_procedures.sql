@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION create_bucket_partition(_bucket text, _add_check BOOLEAN DEFAULT TRUE) RETURNS VOID AS
+CREATE OR REPLACE FUNCTION create_bucket_partition(_bucket text, _add_constraints BOOLEAN DEFAULT TRUE) RETURNS VOID AS
 $$
 DECLARE
   _child RECORD;
@@ -17,15 +17,15 @@ BEGIN
   ELSE
     EXECUTE format(
       'CREATE TABLE poky_%I (
-        PRIMARY KEY (key)
       ) INHERITS (poky)',
       _bucket);
 
     EXECUTE format('CREATE TRIGGER poky_%I_only_if_unmodified_since BEFORE UPDATE ON poky_%I
             FOR EACH ROW EXECUTE PROCEDURE only_if_unmodified_since()', _bucket, _bucket);
 
-    IF (_add_check) THEN
+    IF (_add_constraints) THEN
       EXECUTE format('ALTER TABLE poky_%I ADD CONSTRAINT poky_%I_bucket_check CHECK (bucket = %L)', _bucket, _bucket, _bucket);
+      EXECUTE format('ALTER TABLE poky_%I ADD PRIMARY KEY (key)', _bucket);
     END IF;
 
   END IF;

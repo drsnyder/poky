@@ -28,6 +28,10 @@ BEGIN
 
       RAISE NOTICE 'Adding check bucket = %', _bucket;
       EXECUTE format('ALTER TABLE poky_%I ADD CONSTRAINT poky_%I_bucket_check CHECK (bucket = %L)', _bucket, _bucket, _bucket);
+
+
+      RAISE NOTICE 'Adding PRIMARY key to poky_%', _bucket;
+      EXECUTE format('ALTER TABLE poky_%I ADD PRIMARY KEY (key)', _bucket);
     END LOOP;
 
 END;
