@@ -1,12 +1,11 @@
-CREATE OR REPLACE FUNCTION poky_parent_trigger() RETURNS TRIGGER AS
-$$
+CREATE OR REPLACE FUNCTION poky_insert_trigger() RETURNS TRIGGER AS $$
 BEGIN
-    RAISE EXCEPTION 'No % on poky directly. Use the bucket child table.', TG_OP;
+  EXECUTE format('INSERT INTO poky_%I VALUES ($1.*)', NEW.bucket) USING NEW;
+  RETURN NULL;
 END;
-$$
-LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS poky_parent ON poky;
-CREATE TRIGGER poky_parent BEFORE INSERT OR UPDATE OR DELETE ON poky
-        FOR EACH STATEMENT EXECUTE PROCEDURE poky_parent_trigger();
-
+DROP TRIGGER IF EXISTS poky_insert ON poky;
+CREATE TRIGGER poky_insert
+ BEFORE INSERT ON poky
+   FOR EACH ROW EXECUTE PROCEDURE poky_insert_trigger();

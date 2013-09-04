@@ -128,7 +128,7 @@
 (defn using-partitioning?
   "Determine if partitining is being used."
   [conn]
-  (or (env :poky_partitioned) (child-tables-exist? conn)))
+  (or (env :poky-partitioned) (child-tables-exist? conn)))
 
 (defn create-bucket
   "Creates a bucket if partitioning is being used. A noop in a flat structure.
