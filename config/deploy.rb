@@ -210,7 +210,7 @@ after  "deploy",                 "deploy:cleanup"
 before "deploy:setup",           "deploy:set_perms"
 after  "poky:stop",              "deploy:pause"
 
-unless fetch(:use_varnish)
+if fetch(:use_varnish, false)
   after  "varnish:stop",           "deploy:pause"
   after  "deploy",                 "varnish:check"
   after  "deploy",                 "varnish:reload"

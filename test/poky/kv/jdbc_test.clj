@@ -12,7 +12,7 @@
            [poky.kv.core.Connection]
            [java.sql.Timestamp]))
 
-(def bucket (str (.name *ns*)))
+(def bucket (util/sanitize-bucket-name (str *ns*)))
 (def S (atom nil))
 
 
@@ -81,6 +81,7 @@
 
 
 (with-state-changes [(around :facts (do (reset! S (kv.jdbc/create (env :database-url)))
+                                        (create-bucket (kv/connection @S) bucket)
                                         (purge-bucket (kv/connection @S) bucket)
                                         ?form
                                         (kv/close @S)))]

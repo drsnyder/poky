@@ -2,7 +2,7 @@
   (:require (poky [util :as util])
             [clojure.java.jdbc :as sql]
             [clojure.string :as string]
-            [clojure.tools.logging :refer [warn infof]]
+            [clojure.tools.logging :refer [warn infof errorf]]
             [environ.core :refer [env]])
   (:import com.mchange.v2.c3p0.ComboPooledDataSource
      [java.sql SQLException Timestamp]))
@@ -16,6 +16,11 @@
    :data "text"
    :created_at "timestamptz"
    :modified_at "timestamptz"})
+
+; when partitioning, the bucket names will be used to create tables so we need
+; to ensure that they are valid table names. currently limiting them to words
+; and _
+(def ^:private valid-partitioned-bucket-regex #"^[^\d][\w_]+")
 
 (defn wrap-join [b d a coll] (str b (string/join d coll) a))
 
@@ -69,13 +74,6 @@
   [connection-object]
   (.close (:datasource connection-object)))
 
-(defn purge-bucket
-  "Should only be used in testing."
-  [conn b]
-  (sql/with-connection conn
-    (sql/delete-rows "poky"
-       ["bucket=?" b])))
-
 (defn format-sql-exception
   "Formats the contents of an SQLException and return string.
   Similar to clojure.java.jdbc/print-sql-exception, but doesn't write to *out*"
@@ -102,6 +100,46 @@
               ~@body)
          (catch SQLException e#
              (warn-sql-exception e#))))
+
+(defn purge-bucket
+  "Should only be used in testing."
+  [conn b]
+  (with-logged-connection conn
+    (sql/with-query-results results ["SELECT purge_bucket(?) AS result" b]
+      (first results))))
+
+(defn child-tables-exist?
+  "Returns true if child tables exist."
+  [conn]
+  (with-logged-connection conn
+    (sql/with-query-results results ["SELECT c.relname AS child
+                                     FROM pg_inherits
+                                     JOIN pg_class AS c ON (inhrelid=c.oid)
+                                     JOIN pg_class as p ON (inhparent=p.oid)
+                                     WHERE p.relname = 'poky'"]
+      (pos? (count results)))))
+
+
+(defn valid-bucket-name?
+  "Returns truthy if the bucket name is valid."
+  [bucket]
+  (re-matches valid-partitioned-bucket-regex bucket))
+
+(defn using-partitioning?
+  "Determine if partitining is being used."
+  [conn]
+  (or (env :poky-partitioned) (child-tables-exist? conn)))
+
+(defn create-bucket
+  "Creates a bucket if partitioning is being used. A noop in a flat structure.
+  When partitioning is being used, returns truthy on success and nil on error."
+  [conn b]
+  (when (using-partitioning? conn)
+    (if (valid-bucket-name? b)
+      (with-logged-connection conn
+        (sql/with-query-results results ["SELECT create_bucket_partition(?) AS result" b]
+          (first results)))
+      (errorf "Error, bucket name '%s' is not a valid partitioned bucket name. Must match letters and underscores only." b))))
 
 
 (defn jdbc-get
@@ -130,8 +168,8 @@
   tuple does not exist."
   [conn b k]
   (with-logged-connection conn
-    (sql/delete-rows "poky"
-       ["bucket=? AND key=?" b k])))
+    (sql/with-query-results results ["SELECT delete_kv_data(?, ?) AS result" b k]
+      (list (get (first results) :result)))))
 
 ;; ======== MULTI
 
