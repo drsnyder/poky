@@ -105,6 +105,14 @@
       (.flush))
     (.close s)))
 
+(defn sanitize-bucket-name
+  "FOR TESTING PURPOSES ONLY.
+  Don't use this to sanitize production bucket strings. The client should perform that function."
+  [bucket]
+  (-> bucket
+      (clojure.string/replace #"^[\d]" "")
+      (clojure.string/replace #"[^\w]" "_")))
+
 (defn lazy-reader
   "Lazily read from fd."
   [fd]
@@ -119,7 +127,6 @@
   (lazy-reader (cond-> (io/input-stream file)
                          gunzip (java.util.zip.GZIPInputStream.)
                          true (io/reader))))
-
 
 (defn square
   [x]

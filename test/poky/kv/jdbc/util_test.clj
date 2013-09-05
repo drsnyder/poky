@@ -8,18 +8,20 @@
             [clojure.java.jdbc :as sql]
             [midje.sweet :refer :all]))
 
-(def bucket (str (.name *ns*)))
+(def bucket (util/sanitize-bucket-name (str *ns*)))
 (def S (atom nil))
 
-(with-state-changes [(around :facts (do (reset! S (create-connection (env :database-url)))
-                                        ; alternatively, use sql/transaction
-                                        ; and rollback. that's possible, but
-                                        ; would require some refactoring of
-                                        ; kv.jdbc to support in nested within
-                                        ; sql/connection.
-                                        (purge-bucket @@S bucket)
-                                        ?form
-                                        (close-connection @@S)))]
+(with-state-changes [(around :facts (do
+                                      (reset! S (create-connection (env :database-url)))
+                                      ; alternatively, use sql/transaction
+                                      ; and rollback. that's possible, but
+                                      ; would require some refactoring of
+                                      ; kv.jdbc to support in nested within
+                                      ; sql/connection.
+                                      (create-bucket @@S bucket)
+                                      (purge-bucket @@S bucket)
+                                      ?form
+                                      (close-connection @@S)))]
   (facts :integration :jdbc-set
     (jdbc-set @@S bucket "key" "value") => (contains {:result "inserted"})
     (jdbc-set @@S bucket "key" "value") => (contains {:result "updated"})

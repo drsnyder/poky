@@ -1,0 +1,11 @@
+CREATE OR REPLACE FUNCTION poky_insert_trigger() RETURNS TRIGGER AS $$
+BEGIN
+  EXECUTE format('INSERT INTO poky_%I VALUES ($1.*)', NEW.bucket) USING NEW;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS poky_insert ON poky;
+CREATE TRIGGER poky_insert
+ BEFORE INSERT ON poky
+   FOR EACH ROW EXECUTE PROCEDURE poky_insert_trigger();
