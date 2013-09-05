@@ -104,3 +104,44 @@
       (.write crlf)
       (.flush))
     (.close s)))
+
+(defn lazy-reader
+  "Lazily read from fd."
+  [fd]
+  (lazy-seq
+    (if-let [line (.readLine fd)]
+      (cons line (lazy-reader fd))
+      (.close fd))))
+
+(defn read-file
+  "Lazily read from a file."
+  [file &{:keys [gunzip] :or {gunzip false}}]
+  (lazy-reader (cond-> (io/input-stream file)
+                         gunzip (java.util.zip.GZIPInputStream.)
+                         true (io/reader))))
+
+
+(defn square
+  [x]
+  (* x x))
+
+(defn mean
+  ([s n]
+   (assert (sequential? s) "Cannot compute the mean on a non-seq.")
+   (if (empty? s)
+     nil
+     (/ (reduce + s)
+        n)))
+  ([s]
+   (mean s (count s))))
+
+(defn variance
+  ([s mean n]
+   (/ (reduce + (map #(square (- % mean)) s))
+      n))
+  ([s mean]
+   (variance s mean (count s))))
+
+(defn percentile
+  [s p]
+  (nth (sort s) (* p 100.0)))

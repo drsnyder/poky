@@ -3,8 +3,9 @@
                      [core :refer :all])
             [poky.kv.jdbc.util :as jdbc-util]
             [poky.protocol.http :as http]
-            [poky.system :as system]
-            [poky.util :as util]
+            [poky.benchmark.simple :as bench]
+            (poky [util :as util]
+                  [system :as system])
             [environ.core :refer [env]]
             [cheshire.core :as json]
             [clj-http.client :as client]
