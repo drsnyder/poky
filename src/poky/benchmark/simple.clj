@@ -62,10 +62,10 @@
   (. java.lang.System  (clojure.core/nanoTime)))
 
 (defn elapsed-time
-  [start]
-  (/ (double (- (current-time)
-                start))
-     1000000.0))
+  ([start] (elapsed-time start (current-time)))
+  ([start stop]
+   (/ (double (- stop start))
+      1000000.0)))
 
 (comment
   (bench/bench-jdbc-mget
@@ -88,9 +88,10 @@
                             (elapsed-time start)))
                         sets))
         total (count result)
-        mean (util/mean result total)]
+        mean (util/mean result total)
+        stop (current-time)]
     {:count total
      :mean mean
      :variance (double (util/variance result mean total))
      :95th (util/percentile result 0.95)
-     :elapsed (elapsed-time start)}))
+     :elapsed (elapsed-time start stop)}))
