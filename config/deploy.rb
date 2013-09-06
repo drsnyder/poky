@@ -147,19 +147,19 @@ namespace :deploy do
 
   task :stop, :roles => :app do
     poky.stop
-    varnish.stop if fetch(:use_varnish)
+    varnish.stop if fetch(:use_varnish, false)
   end
 
   task :start, :roles => :app do
     poky.start
-    varnish.start if fetch(:use_varnish)
+    varnish.start if fetch(:use_varnish, false)
   end
 
   task :restart, :roles => :app do
     poky.stop
     poky.start
 
-    unless fetch(:use_varnish)
+    if fetch(:use_varnish, false)
       varnish.stop
       varnish.start
     end
