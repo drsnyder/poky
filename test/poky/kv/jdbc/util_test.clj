@@ -79,10 +79,24 @@
                                {:key "key2" :modified_at key2-ts}]) => (just (contains {:key "key2"}))))
 
     (facts :integration :jdbc-mset
-      (jdbc-mset @@S [{:bucket bucket :key "key1" :data "data1"}]) => (contains {:upsert_kv_data "updated"})
+      (jdbc-mset @@S [{:bucket bucket :key "key1" :data "data1"}]) => (contains {:result "updated"})
 
       (let [key1-ts (util/http-date->Timestamp "Sat, 29 Jun 2013 22:43:43 GMT")]
         (jdbc-mset @@S [{:bucket bucket :key "key1" :data "data1" :modified_at key1-ts}
-                        {:bucket bucket :key "key2" :data "data2"}]) => (list {:upsert_kv_data "rejected"} {:upsert_kv_data "updated"})
+                        {:bucket bucket :key "key2" :data "data2"}]) => (list {:result "rejected"} {:result "updated"})
         (jdbc-get @@S bucket "key1") => (contains {:bucket bucket :key "key1" :data "data1"})
-        (jdbc-get @@S bucket "key2") => (contains {:bucket bucket :key "key2" :data "data2"})))))
+        (jdbc-get @@S bucket "key2") => (contains {:bucket bucket :key "key2" :data "data2"})))
+
+    (facts :integration :jdbc-mset :deadlock
+      (jdbc-mset @@S [{:bucket bucket :key "keyd1", :data "datad1"} {:bucket bucket :key "keyd2", :data "datad2"}])
+
+      (let [do_mset (fn [_]
+                      (let [r (rand)]
+                        (cond
+                          (>= r 0.66) (jdbc-mset @@S [{:bucket bucket :key "keyd1", :data "datad1"} {:bucket bucket :key "keyd2", :data "datad2"}])
+                          (>= r 0.33) (jdbc-mset @@S [{:bucket bucket :key "keyd2", :data "datad1"} {:bucket bucket :key "keyd1", :data "datad2"}])
+                          :else (do (jdbc-delete @@S bucket "keyd1") (jdbc-delete @@S bucket "keyd2")))))]
+        ; if the mset or delete was successful we should get an integer or a map
+        ; back and not nil. in the case of deadlock, an exception should be
+        ; generated and we'll get a null
+        (filter nil? (map first (pmap do_mset (range 0 1000)))) => empty?))))
