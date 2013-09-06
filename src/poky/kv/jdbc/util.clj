@@ -213,7 +213,8 @@
   [conn data]
   ; doing these individually may not be an efficient use of the connection, but
   ; it should avoid deadlock by doing each set individually
-  (map (fn [{b :bucket k :key v :data t :modified_at}]
-         (if t
-           (jdbc-set conn b k v t)
-           (jdbc-set conn b k v))) data))
+  (doall
+    (map (fn [{b :bucket k :key v :data t :modified_at}]
+           (if t
+             (jdbc-set conn b k v t)
+             (jdbc-set conn b k v))) data)))
