@@ -144,6 +144,18 @@ The following dependencies are required to deploy (or run) poky as a service.
  * [varnish](https://www.varnish-cache.org/)
  * [capistrano](https://github.com/capistrano/capistrano)
 
+## Working in the REPL
+
+To work in the repl with logging you will need to create lein profile that sets
+the poky.home JVM define. Something like the following should work in
+~/.lein/profiles.clj:
+
+   {:poky {:jvm-opts ["-Dpoky.home=/path/to/poky"]}}
+
+Then start up the repl with:
+
+   lein with-profile dev,poky repl
+
 ## Contributors
 
  * [Logan Linn](https://github.com/loganlinn)
