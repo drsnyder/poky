@@ -107,7 +107,6 @@ you start the repl, start it with:
 Failing to do so may result in some exceptions being thrown when the repl is
 started.
 
-
 ## Consistency
 
 Poky observes the If-Unmodified-Since header. If this header is present in a
@@ -143,18 +142,6 @@ The following dependencies are required to deploy (or run) poky as a service.
  * [daemonize](http://software.clapper.org/daemonize/)
  * [varnish](https://www.varnish-cache.org/)
  * [capistrano](https://github.com/capistrano/capistrano)
-
-## Working in the REPL
-
-To work in the repl with logging you will need to create lein profile that sets
-the poky.home JVM define. Something like the following should work in
-~/.lein/profiles.clj:
-
-   {:poky {:jvm-opts ["-Dpoky.home=/path/to/poky"]}}
-
-Then start up the repl with:
-
-   lein with-profile dev,poky repl
 
 ## Contributors
 
