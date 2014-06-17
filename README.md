@@ -44,20 +44,20 @@ Other configuration files of interest:
 
 Deploy:
 
- * config/deploy.rb: the capistrano configuration.
- * config/poky.defaults: default settings for the poky service.
+ * `config/deploy.rb`: the capistrano configuration.
+ * `config/poky.defaults`: default settings for the poky service.
 
 Nginx: If you are running poky in a production environment, you may want to consider proxying
 poky through nginx for improved logging, monitoring, and maintenance.
 
- * config/nginx.conf.supplemental
- * config/nginx.vhost
+ * `config/nginx.conf.supplemental`
+ * `config/nginx.vhost`
 
 Varnish: If you have a high request with large objects over the GET API you may want to consider
 running poky behind varnish.
 
- * [optional] config/defaults.vcl: the default varnish configuration.
- * [optional] config/varnish.defaults: default settings for varnishd.
+ * [optional] `config/defaults.vcl`: the default varnish configuration.
+ * [optional] `config/varnish.defaults`: default settings for varnishd.
 
 
 ## HTTP Server Usage
