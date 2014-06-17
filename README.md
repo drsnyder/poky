@@ -5,7 +5,9 @@
 
 Poky is a bucketed key-value store built on [PostgreSQL](http://www.postgresql.org/) that speaks HTTP.
 Poky uses [Clojure](http://clojure.org/) and the [Compojure](https://github.com/weavejester/compojure) web framework to
-provide a REST interface over HTTP. Poky can be combined with [varnish](https://www.varnish-cache.org/) to speed up the REST API.
+provide a REST interface over HTTP.
+
+Poky can also be combined with [varnish](https://www.varnish-cache.org/) to speed up the REST API.
 
 ## Rationale
 
@@ -40,19 +42,30 @@ Next, deploy to the environment of choice:
 
 Other configuration files of interest:
 
- * config/defaults.vcl: the default varnish configuration.
+Deploy:
+
  * config/deploy.rb: the capistrano configuration.
  * config/poky.defaults: default settings for the poky service.
- * config/varnish.defaults: default settings for varnishd.
+
+Nginx: If you are running poky in a production environment, you may want to consider proxying
+poky through nginx for improved logging, monitoring, and maintenance.
+
+ * config/nginx.conf.supplemental
+ * config/nginx.vhost
+
+Varnish: If you have a high request with large objects over the GET API you may want to consider
+running poky behind varnish.
+
+ * [optional] config/defaults.vcl: the default varnish configuration.
+ * [optional] config/varnish.defaults: default settings for varnishd.
+
 
 ## HTTP Server Usage
 
-Create a poky database and create the table:
+Create a poky database and create the table (partitioned is recommended). See the API section below
+for details about getting data in and out.
 
-    postgres=# CREATE DATABASE poky;
-    postgres=# \c poky
-    poky=# \i sql/table.sql
-    poky=# \i sql/triggers.sql
+    $ ./scripts/create-poky-database.sh postgres pg.server.name poky partitioned
 
 To start a new instance of Poky:
 
@@ -69,6 +82,9 @@ option.
 ## API
 
 For putting data in, both POST and PUT are accepted.
+
+    # if you are using the partitioned schema, first create the bucket
+    $ ./scripts/create-bucket.sh postgres pg.server.name poky bucket
 
     $ curl -d"value" -H'Content-Type: application/text' -v -X PUT http://localhost:8081/kv/bucket/key
     $ curl -d"\"json value\"" -H'Content-Type: application/json' -v -X PUT http://localhost:8081/kv/bucket/key

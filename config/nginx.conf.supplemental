@@ -1,0 +1,7 @@
+http {
+    # added to remove temp file creation on disk
+    client_max_body_size 100m;
+    client_body_buffer_size 2000k;
+    proxy_buffers 550 4k; 
+    proxy_buffer_size 2000;
+}

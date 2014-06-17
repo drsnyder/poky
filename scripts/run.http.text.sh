@@ -8,7 +8,7 @@ POKY_JAR=$POKY_HOME/target/poky-standalone.jar
 
 if [ ! -e $POKY_JAR ]; then
     echo "Rebuilding the jar."
-    $(cd $POKY_HOME && lein clean && lein uberjar)
+    $(cd $POKY_HOME && lein with-profile poky clean && lein with-profile poky uberjar)
     echo "Done rebuilding."
 fi
 
