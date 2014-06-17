@@ -155,9 +155,8 @@ Poky was developed and tested on PostgreSQL 9.2.
 
 The following dependencies are required to deploy (or run) poky as a service.
 
- * [daemonize](http://software.clapper.org/daemonize/)
- * [varnish](https://www.varnish-cache.org/)
  * [capistrano](https://github.com/capistrano/capistrano)
+ * [daemonize](http://software.clapper.org/daemonize/)
 
 ## Contributors
 
