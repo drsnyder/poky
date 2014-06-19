@@ -160,5 +160,6 @@ The following dependencies are required to deploy (or run) poky as a service.
 
 ## Contributors
 
+ * [Frank Farmer](https://github.com/frankfarmer)
  * [Logan Linn](https://github.com/loganlinn)
  * [Damon Snyder](https://github.com/drsnyder)
