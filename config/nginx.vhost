@@ -20,5 +20,5 @@ server {
         access_log off;
     }
 
-    access_log  /var/log/nginx/poky.access.log main;
+    access_log  /var/log/nginx/poky.access.log;
 }
